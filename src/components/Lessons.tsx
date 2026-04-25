@@ -117,7 +117,8 @@ function InteractiveText({ text }: { text: string }) {
                       initial={{ opacity: 0, scale: 0.9, y: 10 }}
                       animate={{ opacity: 1, scale: 1, y: 0 }}
                       exit={{ opacity: 0, scale: 0.9, y: 10 }}
-                      className="absolute bottom-full left-1/2 -translate-x-1/2 mb-4 w-72 p-5 bg-white rounded-2xl shadow-2xl border border-emerald-100 z-50 text-left"
+                      className="absolute bottom-full left-1/2 -translate-x-1/2 mb-4 w-[280px] sm:w-72 p-5 bg-white rounded-2xl shadow-2xl border border-emerald-100 z-50 text-left"
+                      style={{ maxWidth: 'calc(100vw - 2rem)' }}
                     >
                       <div className="flex items-center gap-2 mb-3">
                         <div className="w-8 h-8 bg-emerald-50 rounded-lg flex items-center justify-center text-emerald-600">
@@ -1202,7 +1203,7 @@ export function Lessons({
                   <motion.div 
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    className="my-10 flex flex-col items-center justify-center p-12 bg-slate-50 rounded-3xl border border-dashed border-slate-200"
+                    className="my-10 flex flex-col items-center justify-center p-8 md:p-12 bg-slate-50 rounded-3xl border border-dashed border-slate-200"
                   >
                     <div className="w-20 h-20 bg-white rounded-2xl flex items-center justify-center shadow-xl text-emerald-500 mb-4 hover:scale-110 transition-transform">
                       {renderPartIcon(part.iconName)}
@@ -1505,7 +1506,7 @@ export function Lessons({
       </motion.div>
 
       {filteredLessons.length === 0 && !isOnline ? (
-        <div className="bento-card p-20 text-center flex flex-col items-center">
+        <div className="bento-card p-10 md:p-20 text-center flex flex-col items-center">
           <div className="w-20 h-20 bg-slate-50 rounded-3xl flex items-center justify-center text-slate-300 mb-6">
             <Zap size={32} />
           </div>
@@ -1525,7 +1526,7 @@ export function Lessons({
             return (
               <div 
                 key={lesson.id}
-                className="group relative bento-card p-10 flex flex-col justify-between"
+                className="group relative bento-card p-8 md:p-10 flex flex-col justify-between"
               >
                 <div 
                   onClick={() => {

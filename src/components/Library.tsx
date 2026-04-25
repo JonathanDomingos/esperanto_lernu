@@ -177,7 +177,7 @@ export function LibrarySection() {
       )}
 
       {/* Suggestion Card */}
-      <div className="mt-16 p-12 bento-gradient rounded-[48px] text-white overflow-hidden relative shadow-2xl shadow-emerald-900/20">
+      <div className="mt-16 p-8 md:p-12 bento-gradient rounded-[40px] md:rounded-[48px] text-white overflow-hidden relative shadow-2xl shadow-emerald-900/20">
         <div className="relative z-10 max-w-2xl">
           <h3 className="text-4xl font-bold mb-6 italic tracking-tight">Sentiu falta de algo?</h3>
           <p className="text-emerald-100 text-xl mb-6 font-medium opacity-90 leading-relaxed">

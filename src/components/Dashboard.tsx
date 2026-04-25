@@ -118,7 +118,7 @@ export function Dashboard({ stats, allBadges, settings, onUpdateSettings }: Dash
             </div>
           </div>
 
-          <div className="bento-card p-10 bg-white overflow-hidden relative">
+          <div className="bento-card p-6 md:p-10 bg-white overflow-hidden relative">
             <div className="absolute top-0 right-0 p-8 opacity-5">
               <Award size={120} />
             </div>
@@ -179,7 +179,7 @@ export function Dashboard({ stats, allBadges, settings, onUpdateSettings }: Dash
           </div>
 
           {/* Settings Section */}
-          <div className="bento-card p-10 bg-slate-50">
+          <div className="bento-card p-6 md:p-10 bg-slate-50">
             <h3 className="text-2xl font-bold text-slate-900 mb-8 flex items-center gap-3">
               <Settings className="text-slate-400" />
               Configurações
@@ -253,7 +253,7 @@ export function Dashboard({ stats, allBadges, settings, onUpdateSettings }: Dash
 
         {/* Right Column: Leaderboard */}
         <div className="space-y-8">
-          <div className="bento-card p-10 bg-slate-900 text-white h-full">
+          <div className="bento-card p-6 md:p-10 bg-slate-900 text-white h-full">
             <h3 className="text-2xl font-bold mb-8 flex items-center gap-3">
               <Trophy className="text-yellow-400" />
               Ranking Global

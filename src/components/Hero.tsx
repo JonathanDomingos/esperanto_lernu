@@ -22,21 +22,22 @@ export function Hero({ onStart }: HeroProps) {
   return (
     <div className="max-w-7xl mx-auto px-6 sm:px-8 py-10">
       {/* Bento Grid layout matches the provided Design HTML */}
-      <div className="grid grid-cols-1 md:grid-cols-4 md:grid-rows-5 gap-6 h-auto md:h-[800px] lg:h-[700px]">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         
         {/* Main Learning Track (Bento) - Emerald-600 background */}
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="md:col-span-2 md:row-span-3 bg-emerald-600 rounded-[40px] p-10 text-white relative overflow-hidden flex flex-col justify-between shadow-xl shadow-emerald-600/20"
+          className="md:col-span-2 md:row-span-3 bg-emerald-600 rounded-[40px] p-8 md:p-10 text-white relative overflow-hidden flex flex-col justify-between shadow-xl shadow-emerald-600/20"
         >
           <div className="relative z-10">
             <span className="bento-label text-white mb-2 border-b border-emerald-500 pb-1">Leciono de la tago</span>
-            <h2 className="text-5xl font-bold mb-6 leading-tight mt-6">
+            <h2 className="text-4xl md:text-5xl font-bold mb-6 leading-tight mt-6">
               La Akuzativo: <br/>
               <span className="text-emerald-200 italic font-serif">Kiam uzi la literon '-n'</span>
             </h2>
+
             <p className="text-emerald-50 mb-8 max-w-sm text-lg font-medium opacity-90 leading-relaxed">
               Aprenda como identificar o objeto direto em uma frase usando a regra mais distinta do Esperanto.
             </p>
@@ -193,7 +194,7 @@ export function Hero({ onStart }: HeroProps) {
               </div>
               <span className="text-xs font-bold text-emerald-600 uppercase tracking-widest">Historio de Esperanto</span>
             </div>
-            <h3 className="text-4xl font-bold text-slate-900 mb-6">Uma língua para unir o mundo</h3>
+            <h3 className="text-3xl md:text-4xl font-bold text-slate-900 mb-6">Uma língua para unir o mundo</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
               <div>
                 <p className="text-slate-600 text-lg leading-relaxed mb-6">

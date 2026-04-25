@@ -82,7 +82,7 @@ export function Flashcards({ cards, onAddCard, onDeleteCard, onAwardPoints, soun
           <motion.div 
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="bento-card p-12 bg-white"
+            className="bento-card p-8 md:p-12 bg-white"
           >
             <div className="w-20 h-20 bg-emerald-100 text-emerald-600 rounded-3xl flex items-center justify-center mx-auto mb-8">
               <RotateCcw size={32} />
@@ -228,7 +228,7 @@ export function Flashcards({ cards, onAddCard, onDeleteCard, onAwardPoints, soun
             </div>
 
             {/* Back */}
-            <div className="absolute inset-0 bento-card flex flex-col items-center justify-center p-12 text-center backface-hidden rotate-y-180 bg-emerald-50 border-emerald-200">
+            <div className="absolute inset-0 bento-card flex flex-col items-center justify-center p-8 md:p-12 text-center backface-hidden rotate-y-180 bg-emerald-50 border-emerald-200">
               <span className="bento-label text-emerald-600 mb-4">Português</span>
               <h3 className="text-4xl font-bold text-emerald-900">{card.back}</h3>
               <p className="mt-8 text-emerald-600/60 text-sm">Continuar aprendendo</p>
@@ -358,7 +358,7 @@ export function Flashcards({ cards, onAddCard, onDeleteCard, onAwardPoints, soun
       </AnimatePresence>
 
       {cards.length === 0 ? (
-        <div className="bento-card p-20 text-center flex flex-col items-center justify-center bg-white">
+        <div className="bento-card p-10 md:p-20 text-center flex flex-col items-center justify-center bg-white">
           <div className="w-20 h-20 bg-slate-50 rounded-3xl flex items-center justify-center text-slate-300 mb-6">
             <Sparkles size={32} />
           </div>
@@ -366,7 +366,7 @@ export function Flashcards({ cards, onAddCard, onDeleteCard, onAwardPoints, soun
           <p className="text-slate-400 max-w-sm mx-auto">Adicione cards manualmente ou complete lições para gerar sugestões de estudo.</p>
         </div>
       ) : filteredCards.length === 0 ? (
-        <div className="bento-card p-20 text-center flex flex-col items-center justify-center bg-white">
+        <div className="bento-card p-10 md:p-20 text-center flex flex-col items-center justify-center bg-white">
           <p className="text-slate-400 font-medium">Nenhum card encontrado nesta categoria.</p>
         </div>
       ) : (
