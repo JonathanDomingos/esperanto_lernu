@@ -291,7 +291,7 @@ export default function App() {
   ];
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-50 font-sans pb-32 md:pb-0">
+    <div className="min-h-screen flex flex-col bg-slate-50 font-sans pb-32 md:pb-0 overflow-x-hidden">
       {/* Navigation */}
       <nav className="sticky top-0 z-50 bg-white/70 backdrop-blur-xl border-b border-slate-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-8">

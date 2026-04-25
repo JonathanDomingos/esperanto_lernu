@@ -39,7 +39,7 @@ export function DictionarySearch({ onAddFlashcard, inline = false }: DictionaryS
             initial={inline ? { opacity: 0, y: 10 } : { opacity: 0, scale: 0.9, y: 20 }}
             animate={inline ? { opacity: 1, y: 0 } : { opacity: 1, scale: 1, y: 0 }}
             exit={inline ? { opacity: 0, y: 10 } : { opacity: 0, scale: 0.9, y: 20 }}
-            className={`${inline ? 'w-full mt-4' : 'fixed bottom-48 md:bottom-24 right-6 md:right-8 w-[calc(100vw-3rem)] md:w-96'} bento-card shadow-2xl p-6 bg-white overflow-hidden`}
+            className={`${inline ? 'w-full mt-4' : 'fixed bottom-48 md:bottom-24 left-6 md:left-auto right-6 md:right-8 w-auto md:w-96'} bento-card shadow-2xl p-6 bg-white overflow-hidden`}
           >
             <div className="flex items-center gap-3 mb-4">
               <Book className="text-emerald-500" size={20} />

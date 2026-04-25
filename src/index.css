@@ -12,6 +12,7 @@
 @layer base {
   body {
     @apply bg-slate-50 text-slate-800 font-sans;
+    overflow-x: hidden;
   }
 
   h1, h2, h3, h4 {
