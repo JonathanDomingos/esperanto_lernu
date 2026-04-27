@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Plus, Trash2, RotateCcw, ChevronLeft, ChevronRight, Check, X, Sparkles } from 'lucide-react';
+import { Plus, Trash2, RotateCcw, ChevronLeft, ChevronRight, Check, X, Sparkles, Search } from 'lucide-react';
 import { Flashcard } from '../types';
 import { soundService } from '../services/soundService';
 
@@ -18,6 +18,7 @@ export function Flashcards({ cards, onAddCard, onDeleteCard, onAwardPoints, soun
   const [newBack, setNewBack] = useState('');
   const [newCategory, setNewCategory] = useState('Geral');
   const [selectedCategory, setSelectedCategory] = useState('Todos');
+  const [searchQuery, setSearchQuery] = useState('');
   const [practiceMode, setPracticeMode] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
@@ -28,9 +29,12 @@ export function Flashcards({ cards, onAddCard, onDeleteCard, onAwardPoints, soun
 
   const categories = ['Todos', ...Array.from(new Set(cards.map(c => c.category || 'Geral')))];
   
-  const filteredCards = selectedCategory === 'Todos' 
-    ? cards 
-    : cards.filter(c => (c.category || 'Geral') === selectedCategory);
+  const filteredCards = cards.filter(c => {
+    const matchesCategory = selectedCategory === 'Todos' || (c.category || 'Geral') === selectedCategory;
+    const matchesSearch = c.front.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                          c.back.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesCategory && matchesSearch;
+  });
 
   const startPractice = () => {
     if (filteredCards.length === 0) return;
@@ -282,20 +286,32 @@ export function Flashcards({ cards, onAddCard, onDeleteCard, onAwardPoints, soun
       </div>
 
       {cards.length > 0 && (
-        <div className="flex flex-wrap gap-2 mb-10 pb-4 border-b border-slate-100">
-          {categories.map(cat => (
-            <button
-              key={cat}
-              onClick={() => setSelectedCategory(cat)}
-              className={`px-5 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${
-                selectedCategory === cat 
-                  ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/20' 
-                  : 'bg-white text-slate-400 hover:text-slate-600 border border-slate-100'
-              }`}
-            >
-              {cat}
-            </button>
-          ))}
+        <div className="space-y-6 mb-10 pb-4 border-b border-slate-100">
+          <div className="relative max-w-md">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+            <input 
+              type="text"
+              placeholder="Buscar no meu baralho..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-12 pr-4 py-3 bg-white border border-slate-200 rounded-2xl outline-none focus:border-emerald-500 transition-all font-medium text-sm shadow-sm"
+            />
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {categories.map(cat => (
+              <button
+                key={cat}
+                onClick={() => setSelectedCategory(cat)}
+                className={`px-5 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${
+                  selectedCategory === cat 
+                    ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/20' 
+                    : 'bg-white text-slate-400 hover:text-slate-600 border border-slate-100'
+                }`}
+              >
+                {cat}
+              </button>
+            ))}
+          </div>
         </div>
       )}
 
@@ -367,7 +383,16 @@ export function Flashcards({ cards, onAddCard, onDeleteCard, onAwardPoints, soun
         </div>
       ) : filteredCards.length === 0 ? (
         <div className="bento-card p-10 md:p-20 text-center flex flex-col items-center justify-center bg-white">
-          <p className="text-slate-400 font-medium">Nenhum card encontrado nesta categoria.</p>
+          <div className="w-16 h-16 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-300 mb-4">
+            <Search size={24} />
+          </div>
+          <p className="text-slate-400 font-medium">Nenhum card encontrado com esses filtros.</p>
+          <button 
+            onClick={() => { setSelectedCategory('Todos'); setSearchQuery(''); }}
+            className="mt-4 text-emerald-600 font-bold hover:underline"
+          >
+            Limpar filtros
+          </button>
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">

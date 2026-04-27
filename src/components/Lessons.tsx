@@ -415,7 +415,69 @@ const GENERATED_LESSONS: Lesson[] = Array.from({ length: 92 }, (_, i) => {
   };
 });
 
-const SAMPLE_LESSONS: Lesson[] = [...MANUAL_LESSONS, ...GENERATED_LESSONS];
+const ADVANCED_LESSONS: Lesson[] = [
+  {
+    id: 'adv1',
+    title: 'Aprofundamento: Os Correlativos',
+    description: 'Entenda a matriz lógica dos 45 correlativos que formam a espinha dorsal da precisão no Esperanto.',
+    difficulty: 'advanced',
+    parts: [
+      { type: 'text', content: 'Os correlativos são palavras que se relacionam de forma sistemática. Eles são formados por um radical de "pergunta/indicação" e um radical de "tipo".' },
+      { type: 'icon', content: 'Matriz Lógica', iconName: 'zap' },
+      { type: 'text', content: 'Existem 5 começos: KI- (pergunta), TI- (ponto), ĈI- (tudo), NENI- (nada), I- (alguma coisa).' },
+      { type: 'text', content: 'E 9 finais: -O (coisa), -A (qualidade), -E (lugar), -AM (tempo), -EL (modo), -AL (razão), -OM (quantidade), -ES (posse), -U (indivíduo).' },
+      { type: 'example', content: 'KI (pergunta) + O (coisa) = KIO (O quê). TI (ponto) + E (lugar) = TIE (Lá/Ali).' },
+      { type: 'question', content: 'Como se diz "Sempre" (Tudo + Tempo) em Esperanto?', options: ['Ĉiam', 'Ĉio', 'Tiam'], correctAnswer: 'Ĉiam', explanation: 'Ĉi- (todo) + -am (tempo) = Ĉiam.' },
+      { type: 'text', content: 'Dominar essa tabela permite que você expresse quase qualquer relação lógica sem precisar decorar palavras isoladas.' }
+    ]
+  },
+  {
+    id: 'adv2',
+    title: 'Nuances: O Sufixo -UM-',
+    description: 'O sufixo "coringa" que não tem um sentido definido, mas cria relações intuitivas.',
+    difficulty: 'advanced',
+    parts: [
+      { type: 'text', content: 'O sufixo -UM- é o mais flexível e indefinido do Esperanto. Ele indica uma relação vaga com a raiz.' },
+      { type: 'example', content: '"Kolo" (Pescoço) -> "Kolumo" (Colarinho). "Butono" (Botão) -> "Butonumi" (Abotoar).' },
+      { type: 'text', content: 'Ele é usado quando nenhum outro sufixo se encaixa perfeitamente na lógica técnica.' },
+      { type: 'example', content: '"Plena" (Cheio) -> "Plenumi" (Cumprir/Realizar).' },
+      { type: 'question', content: 'O que significa "Krucumi"? (Kruco = Cruz)', options: ['Crucificar', 'Fazer uma cruz', 'Comprar uma cruz'], correctAnswer: 'Crucificar', explanation: 'Kruco (Cruz) + um (relação indefinida/vaga/especial) + i (verbo) = Crucificar.' }
+    ]
+  },
+  {
+    id: 'adv3',
+    title: 'Cultura: O Idealismo (Interna Ideo)',
+    description: 'Explore a filosofia por trás da língua e o impacto social do movimento esperantista.',
+    difficulty: 'advanced',
+    parts: [
+      { type: 'text', content: 'O Esperanto não é apenas uma gramática; ele carrega a "Interna Ideo" (Ideia Interna): a promoção da paz e compreensão mútua.' },
+      { type: 'icon', content: 'Idealismo', iconName: 'globe' },
+      { type: 'text', content: 'Zamenhof criou a língua para derrubar barreiras linguísticas que geravam desconfiança entre os povos.' },
+      { type: 'example', content: '"Ni fosu la teron, por ke la popoloj povu nin kompreni" (Cavemos o chão, para que os povos possam nos entender).' },
+      { type: 'text', content: 'Hoje, a cultura esperantista inclui festivais (UK - Universala Kongreso), música, literatura original e uma rede mundial de hospitalidade.' }
+    ]
+  },
+  {
+    id: 'adv4',
+    title: 'Estilo: Literatura e Poesia',
+    description: 'A flexibilidade do Esperanto na arte. Como a ordem das palavras e as rimas funcionam.',
+    difficulty: 'advanced',
+    parts: [
+      { type: 'text', content: 'O Esperanto é extremamente maleável. Graças ao acusativo (-n), você pode mudar a ordem das palavras para criar ênfase ou rimas sem mudar o sentido básico.' },
+      { type: 'example', content: 'Normal: "Mi amas vin". Poético: "Vin amas mi" ou "Amas mi vin".' },
+      { type: 'icon', content: 'Arte Literal', iconName: 'music' },
+      { type: 'text', content: 'Existem milhares de livros originais em Esperanto, não apenas traduções. Autores como Julio Baghy e William Auld elevaram o status da língua à literatura de alto nível.' },
+      { type: 'example', content: '"Ho, mia kor\', ne batu maltrankvile" - Famosos versos de Zamenhof sobre a ansiedade de criar a língua.' },
+      { type: 'question', content: 'Por que o Esperanto é bom para poesia?', options: ['Ordem flexível e sufixos regulares', 'Tem poucas palavras', 'É uma língua antiga'], correctAnswer: 'Ordem flexível e sufixos regulares', explanation: 'A flexibilidade gramatical permite métricas e rimas muito criativas.' }
+    ]
+  }
+];
+
+const SAMPLE_LESSONS: Lesson[] = [
+  ...MANUAL_LESSONS.map(l => ({ ...l, difficulty: 'beginner' as const })), 
+  ...GENERATED_LESSONS.map(l => ({ ...l, difficulty: 'intermediate' as const })),
+  ...ADVANCED_LESSONS
+];
 
 interface LessonsProps {
   completedLessons: string[];
@@ -550,6 +612,7 @@ export function Lessons({
   soundEnabled
 }: LessonsProps) {
   const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
+  const [selectedLevel, setSelectedLevel] = useState<'beginner' | 'intermediate' | 'advanced'>('beginner');
   const [currentPartIndex, setCurrentPartIndex] = useState(0);
   const [maxVisitedIndex, setMaxVisitedIndex] = useState(0); // Track progress for review jumping
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
@@ -780,9 +843,13 @@ export function Lessons({
     }
   };
 
-  const filteredLessons = isOnline 
-    ? SAMPLE_LESSONS 
-    : SAMPLE_LESSONS.filter(l => downloadedLessons.includes(l.id));
+  const filteredLessons = useMemo(() => {
+    let base = SAMPLE_LESSONS.filter(l => l.difficulty === selectedLevel);
+    if (!isOnline) {
+      base = base.filter(l => downloadedLessons.includes(l.id));
+    }
+    return base;
+  }, [selectedLevel, isOnline, downloadedLessons]);
 
   if (isQuizMode) {
     const question = GRAMMAR_QUIZ_QUESTIONS[quizIndex];
@@ -1124,33 +1191,53 @@ export function Lessons({
 
         <div className="bento-card overflow-hidden">
           {/* Dynamic Header */}
-          <div className="bg-slate-50 border-b border-slate-100 p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center text-emerald-600 shadow-sm font-black ring-1 ring-slate-200">
-                {currentPartIndex + 1}
+          <div className="bg-slate-50 border-b border-slate-100 p-6">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center text-emerald-600 shadow-sm font-black ring-1 ring-slate-200">
+                  {currentPartIndex + 1}
+                </div>
+                <div>
+                  <h3 className="font-black text-slate-900 leading-tight">{selectedLesson.title}</h3>
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mt-1">Status da Lição</p>
+                </div>
               </div>
-              <div>
-                <h3 className="font-black text-slate-900">{selectedLesson.title}</h3>
-                <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Progresso na Unidade</p>
+              
+              <div className="flex items-center gap-3">
+                {selectedLesson.parts.map((_, i) => (
+                  <button
+                    key={i}
+                    onMouseEnter={() => i <= maxVisitedIndex && setCurrentPartIndex(i)}
+                    className={`h-2 w-8 rounded-full transition-all duration-300 ${
+                      i === currentPartIndex 
+                        ? 'bg-emerald-500 w-12 shadow-lg shadow-emerald-500/20' 
+                        : i < currentPartIndex
+                          ? 'bg-emerald-200'
+                          : i <= maxVisitedIndex
+                            ? 'bg-emerald-100 cursor-pointer'
+                            : 'bg-slate-200 cursor-not-allowed'
+                    }`}
+                  />
+                ))}
               </div>
             </div>
-            
-            <div className="flex items-center gap-3">
-              {selectedLesson.parts.map((_, i) => (
-                <button
-                  key={i}
-                  onMouseEnter={() => i <= maxVisitedIndex && setCurrentPartIndex(i)}
-                  className={`h-2 w-8 rounded-full transition-all duration-300 ${
-                    i === currentPartIndex 
-                      ? 'bg-emerald-500 w-12 shadow-lg shadow-emerald-500/20' 
-                      : i < currentPartIndex
-                        ? 'bg-emerald-200'
-                        : i <= maxVisitedIndex
-                          ? 'bg-emerald-100 cursor-pointer'
-                          : 'bg-slate-200 cursor-not-allowed'
-                  }`}
-                />
-              ))}
+
+            {/* Barra de Progresso Visual */}
+            <div className="w-full">
+              <div className="flex justify-between items-center mb-2 text-xs font-bold text-slate-500">
+                <span>Parte {currentPartIndex + 1} de {selectedLesson.parts.length}</span>
+                <span className="text-emerald-600">{Math.round(progress)}% Concluído</span>
+              </div>
+              <div className="w-full h-2.5 bg-slate-200 rounded-full overflow-hidden shadow-inner">
+                <motion.div 
+                  className="h-full bg-emerald-500 rounded-full shadow-[0_0_10px_rgba(16,185,129,0.3)] relative"
+                  initial={{ width: 0 }}
+                  animate={{ width: `${progress}%` }}
+                  transition={{ duration: 0.5, ease: "easeOut" }}
+                >
+                  <div className="absolute top-0 right-0 bottom-0 w-8 bg-gradient-to-r from-transparent to-white/30" />
+                </motion.div>
+              </div>
             </div>
           </div>
 
@@ -1378,7 +1465,27 @@ export function Lessons({
             </button>
           </div>
           <h2 className="text-5xl font-bold text-slate-900 mb-6">Trilha de Aprendizado</h2>
-          <p className="text-slate-500 max-w-2xl text-lg font-medium">Módulos sequenciais projetados para levar você do zero ao nível básico em tempo recorde.</p>
+          <p className="text-slate-500 max-w-2xl text-lg font-medium">Módulos sequenciais projetados para levar você do zero à fluência em tempo recorde.</p>
+          
+          <div className="flex flex-wrap items-center gap-2 mt-10">
+            {[
+              { id: 'beginner', label: 'Iniciante', active: 'bg-emerald-600 shadow-emerald-600/20' },
+              { id: 'intermediate', label: 'Intermediário', active: 'bg-blue-600 shadow-blue-600/20' },
+              { id: 'advanced', label: 'Avançado', active: 'bg-purple-600 shadow-purple-600/20' }
+            ].map((level) => (
+              <button
+                key={level.id}
+                onClick={() => setSelectedLevel(level.id as any)}
+                className={`px-6 py-2.5 rounded-xl font-bold text-sm transition-all ${
+                  selectedLevel === level.id
+                    ? `${level.active} text-white shadow-lg`
+                    : 'bg-white border border-slate-100 text-slate-500 hover:border-slate-300'
+                }`}
+              >
+                {level.label}
+              </button>
+            ))}
+          </div>
         </div>
         {!isOnline && (
           <div className="flex items-center gap-3 px-4 py-2 bg-red-50 text-red-600 rounded-2xl border border-red-100 font-bold text-sm">

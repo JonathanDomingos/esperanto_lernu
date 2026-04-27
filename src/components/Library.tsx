@@ -34,6 +34,13 @@ const RESOURCES: ResourceItem[] = [
     icon: 'Search'
   },
   {
+    title: 'Tujvortaro',
+    description: 'Dicionário ultra-rápido e simples de Esperanto. Ideal para buscas instantâneas durante o estudo.',
+    url: 'https://tujvortaro.net',
+    category: 'Dictionary',
+    icon: 'Search'
+  },
+  {
     title: 'Esperanto Brasil',
     description: 'Portal da Liga Brasileira de Esperanto. Encontre clubes locais e eventos no Brasil.',
     url: 'https://esperanto.org.br',
@@ -60,6 +67,7 @@ export function LibrarySection() {
       case 'Video': return <Video size={18} />;
       case 'Course': return <Book size={18} />;
       case 'Community': return <Users size={18} />;
+      case 'Dictionary': return <Search size={18} />;
       default: return <Search size={18} />;
     }
   };

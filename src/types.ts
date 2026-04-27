@@ -15,6 +15,7 @@ export interface Lesson {
   id: string;
   title: string;
   description: string;
+  difficulty?: 'beginner' | 'intermediate' | 'advanced';
   parts: LessonPart[];
 }
 

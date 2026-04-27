@@ -36,6 +36,7 @@ const BADGES: Badge[] = [
   { id: 'polyglot', name: 'Poliglota', description: 'Completou 5 lições', icon: '🌍' },
   { id: 'streak-3', name: 'Fogo nos Estudos', description: 'Manteve uma sequência de 3 dias', icon: '🔥' },
   { id: 'flash-master', name: 'Mestre dos Flashcards', description: 'Criou 10 flashcards personalizados', icon: '🧠' },
+  { id: 'advanced-explorer', name: 'Explorador Avançado', description: 'Iniciou sua jornada em lições avançadas', icon: '🚀' },
   { id: 'course-complete', name: 'Mestre do Esperanto', description: 'Completou todas as 100 lições', icon: '👑' },
 ];
 
@@ -208,6 +209,13 @@ export default function App() {
       // Polyglot (5 lessons)
       if (completedLessons.length >= 5 && !newBadges.includes('polyglot')) {
         newBadges.push('polyglot');
+      }
+      
+      // Advanced Explorer
+      const hasAdvanced = completedLessons.some(id => id.startsWith('adv'));
+      if (hasAdvanced && !newBadges.includes('advanced-explorer')) {
+        newBadges.push('advanced-explorer');
+        addNotification('Novo Horizonte! 🚀', 'Você iniciou seus estudos avançados no Esperanto!', 'success');
       }
       
       // Streak 3
@@ -398,41 +406,50 @@ export default function App() {
               const Icon = item.icon;
               const isActive = activeTab === item.id;
               return (
-                <button
+                <motion.button
                   key={item.id}
+                  whileTap={{ scale: 0.9 }}
                   onClick={() => {
                     setActiveTab(item.id as Tab);
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                   }}
-                  className="relative flex flex-col items-center justify-center flex-1 py-1 group"
+                  className="relative flex flex-col items-center justify-center flex-1 py-1 group h-full"
                 >
                   <AnimatePresence>
                     {isActive && (
                       <motion.div
                         layoutId="activeTab"
-                        className="absolute inset-0 bg-white/10 rounded-2xl"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                        className="absolute inset-1 bg-emerald-500/10 rounded-2xl"
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.8 }}
+                        transition={{ type: "spring", bounce: 0.2, duration: 0.5 }}
                       />
                     )}
                   </AnimatePresence>
                   
-                  <div className={`relative z-10 p-1.5 transition-all duration-300 ${
-                    isActive ? 'text-emerald-400 scale-110' : 'text-slate-500 group-active:scale-95'
+                  <div className={`relative z-10 transition-all duration-300 ${
+                    isActive ? 'text-emerald-500 scale-110' : 'text-slate-500'
                   }`}>
-                    <Icon size={20} strokeWidth={isActive ? 2.5 : 2} />
+                    <Icon size={isActive ? 22 : 20} strokeWidth={isActive ? 3 : 2} />
                   </div>
-                  <span className={`relative z-10 text-[9px] font-black uppercase tracking-widest transition-colors duration-300 ${
-                    isActive ? 'text-white' : 'text-slate-500'
+                  <span className={`relative z-10 text-[9px] font-black uppercase tracking-widest transition-colors duration-300 mt-0.5 ${
+                    isActive ? 'text-emerald-500' : 'text-slate-500'
                   }`}>
                     {item.label === 'Lições Interativas' ? 'Lições' : 
                      item.label === 'Acervo Digital' ? 'Acervo' :
                      item.label === 'Início' ? 'Home' :
                      item.label}
                   </span>
-                </button>
+
+                  {isActive && (
+                    <motion.div 
+                      layoutId="navDot"
+                      className="absolute -bottom-1 w-1 h-1 bg-emerald-500 rounded-full"
+                      transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                    />
+                  )}
+                </motion.button>
               );
             })}
           </div>
@@ -450,7 +467,13 @@ export default function App() {
             transition={{ duration: 0.35, ease: "easeInOut" }}
             className="w-full h-full"
           >
-            {activeTab === 'home' && <Hero onStart={() => setActiveTab('lessons')} />}
+            {activeTab === 'home' && (
+              <Hero 
+                onStart={() => setActiveTab('lessons')} 
+                onNavigate={(tab) => setActiveTab(tab as Tab)}
+                stats={userStats}
+              />
+            )}
             {activeTab === 'lessons' && (
               <div>
                 <div className="max-w-7xl mx-auto px-6 pt-12 flex justify-center">
