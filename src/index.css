@@ -24,7 +24,19 @@
 }
 
 .bento-card {
-  @apply bg-white rounded-[32px] border border-slate-200 shadow-sm transition-all duration-300;
+  @apply bg-white rounded-[32px] border border-slate-200 shadow-sm transition-all duration-500 hover:shadow-2xl hover:shadow-emerald-500/10 hover:-translate-y-1;
+}
+
+.interactive-hotspot {
+  @apply relative inline-block cursor-help font-black tracking-tight rounded-md px-1 transition-all;
+  background: linear-gradient(120deg, rgba(16, 185, 129, 0.05) 0%, rgba(16, 185, 129, 0.15) 100%);
+  border-bottom: 2px solid rgba(16, 185, 129, 0.3);
+}
+
+.interactive-hotspot:hover {
+  @apply scale-105;
+  background: linear-gradient(120deg, rgba(16, 185, 129, 0.15) 0%, rgba(16, 185, 129, 0.25) 100%);
+  border-bottom-color: rgba(16, 185, 129, 0.6);
 }
 
 .bento-card-interactive {

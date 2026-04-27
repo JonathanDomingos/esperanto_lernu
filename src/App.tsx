@@ -42,6 +42,7 @@ const BADGES: Badge[] = [
 
 type Tab = 'home' | 'lessons' | 'library' | 'dashboard';
 
+
 export default function App() {
   const [activeTab, setActiveTab] = useState<Tab>('home');
   const [activeContent, setActiveContent] = useState<'lessons' | 'flashcards'>('lessons');
@@ -292,7 +293,7 @@ export default function App() {
   };
 
   const navItems = [
-    { id: 'home', label: 'Início', icon: Globe },
+    { id: 'home', label: 'Início', icon: Sparkles },
     { id: 'lessons', label: 'Lições Interativas', icon: BookOpen },
     { id: 'library', label: 'Acervo Digital', icon: Library },
     { id: 'dashboard', label: 'Conquistas', icon: Award },
@@ -419,12 +420,29 @@ export default function App() {
                     {isActive && (
                       <motion.div
                         layoutId="activeTab"
-                        className="absolute inset-1 bg-emerald-500/10 rounded-2xl"
+                        className="absolute inset-1 bg-emerald-500/10 rounded-2xl flex items-center justify-center overflow-hidden"
                         initial={{ opacity: 0, scale: 0.8 }}
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.8 }}
                         transition={{ type: "spring", bounce: 0.2, duration: 0.5 }}
-                      />
+                      >
+                        {item.id === 'home' && (
+                          <motion.div
+                            animate={{ 
+                              rotate: [0, -10, 10, -10, 10, 0],
+                              scale: [1, 1.1, 1]
+                            }}
+                            transition={{ 
+                              duration: 0.5,
+                              repeat: Infinity,
+                              repeatDelay: 2
+                            }}
+                            className="text-emerald-500/10 pointer-events-none"
+                          >
+                            <Sparkles size={40} />
+                          </motion.div>
+                        )}
+                      </motion.div>
                     )}
                   </AnimatePresence>
                   
@@ -477,16 +495,16 @@ export default function App() {
             {activeTab === 'lessons' && (
               <div>
                 <div className="max-w-7xl mx-auto px-6 pt-12 flex justify-center">
-                  <div className="bg-white p-1.5 rounded-2xl border border-slate-200 flex gap-2 shadow-sm">
+                  <div className="bg-white p-1.5 rounded-2xl border border-slate-200 flex gap-1 md:gap-2 shadow-sm overflow-x-auto no-scrollbar max-w-full">
                     <button 
                       onClick={() => setActiveContent('lessons')}
-                      className={`px-6 py-2 rounded-xl text-sm font-bold transition-all ${activeContent === 'lessons' ? 'bg-slate-900 text-white shadow-lg' : 'text-slate-500 hover:bg-slate-50'}`}
+                      className={`px-4 md:px-6 py-2 rounded-xl text-xs md:text-sm font-bold transition-all whitespace-nowrap ${activeContent === 'lessons' ? 'bg-slate-900 text-white shadow-lg' : 'text-slate-500 hover:bg-slate-50'}`}
                     >
                       Lições
                     </button>
                     <button 
                       onClick={() => setActiveContent('flashcards')}
-                      className={`px-6 py-2 rounded-xl text-sm font-bold transition-all ${activeContent === 'flashcards' ? 'bg-slate-900 text-white shadow-lg' : 'text-slate-500 hover:bg-slate-50'}`}
+                      className={`px-4 md:px-6 py-2 rounded-xl text-xs md:text-sm font-bold transition-all whitespace-nowrap ${activeContent === 'flashcards' ? 'bg-slate-900 text-white shadow-lg' : 'text-slate-500 hover:bg-slate-50'}`}
                     >
                       Flashcards
                     </button>
@@ -515,7 +533,15 @@ export default function App() {
                 )}
               </div>
             )}
-            {activeTab === 'library' && <LibrarySection />}
+            {activeTab === 'library' && (
+              <LibrarySection 
+                onAddFlashcard={handleAddFlashcard} 
+                onNavigate={(tab, content) => {
+                  setActiveTab(tab as Tab);
+                  if (content) setActiveContent(content);
+                }} 
+              />
+            )}
             {activeTab === 'dashboard' && (
               <Dashboard 
                 stats={userStats} 

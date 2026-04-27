@@ -28,7 +28,8 @@ import {
   Smile,
   Mic,
   Star,
-  Trophy
+  Trophy,
+  Share2
 } from 'lucide-react';
 
 import { soundService } from '../services/soundService';
@@ -76,6 +77,14 @@ const GRAMMAR_HOTSPOTS: GrammarHotspot[] = [
   { term: '-eg-', explanation: 'Aumentativo (intensifica o sentido).', examples: ['Domego (Casarão)', 'Bonege (Muito bem)'] },
   { term: '-et-', explanation: 'Diminutivo (reduz o sentido).', examples: ['Dometo (Casinha)', 'Vireto (Homenzinho)'] },
   { term: '-ar-', explanation: 'Sufixo Coletivo (grupo de coisas iguais).', examples: ['Arbaro (Floresta)', 'Vortaro (Dicionário)'] },
+  { term: 'mal-', explanation: 'Prefixo que inverte o sentido da palavra (o oposto).', examples: ['Bona (Bom) -> Malbona (Mau)', 'Granda (Grande) -> Malgranda (Pequeno)'] },
+  { term: 'bo-', explanation: 'Prefixo indicando parentesco por casamento/afinidade.', examples: ['Bopatro (Sogro)', 'Bofrato (Cunhado)'] },
+  { term: 'ge-', explanation: 'Prefixo que indica ambos os sexos juntos.', examples: ['Gepatroj (Pais - pai e mãe)', 'Gefratoj (Irmãos e irmãs)'] },
+  { term: 're-', explanation: 'Prefixo indicando repetição ou retorno.', examples: ['Reveni (Retornar)', 'Refari (Refazer)'] },
+  { term: '-ilo', explanation: 'Sufixo para ferramenta, instrumento ou meio.', examples: ['Tranĉilo (Faca - ferramenta de cortar)', 'Veturilo (Veículo)'] },
+  { term: '-ejo', explanation: 'Sufixo para lugar ou estabelecimento.', examples: ['Lernejo (Escola)', 'Vendejo (Loja)'] },
+  { term: '-isto', explanation: 'Sufixo para profissão ou ocupação habitual.', examples: ['Dentisto (Dentista)', 'Instruisto (Professor)'] },
+  { term: '-ano', explanation: 'Sufixo para membro ou habitante de um lugar/grupo.', examples: ['Kristano (Cristão)', 'Urbano (Citadino)'] },
 ];
 
 function InteractiveText({ text }: { text: string }) {
@@ -101,7 +110,7 @@ function InteractiveText({ text }: { text: string }) {
                   e.stopPropagation();
                   setActiveHotspot(activeHotspot?.term === hotspot.term ? null : hotspot);
                 }}
-                className="mx-0.5 px-1 bg-emerald-100 text-emerald-800 rounded-md font-black border-b-2 border-emerald-300 hover:bg-emerald-200 transition-colors cursor-help"
+                className="interactive-hotspot mx-0.5 text-emerald-800"
               >
                 {part}
               </button>
@@ -124,14 +133,14 @@ function InteractiveText({ text }: { text: string }) {
                         <div className="w-8 h-8 bg-emerald-50 rounded-lg flex items-center justify-center text-emerald-600">
                           <Zap size={16} />
                         </div>
-                        <span className="font-black text-emerald-700 uppercase tracking-widest text-[10px]">Dica Gramatical</span>
+                        <span className="font-black text-emerald-700 uppercase tracking-widest text-[10px]">Dica Rápida</span>
                       </div>
-                      <h4 className="text-slate-900 font-bold mb-2">Significado de "{hotspot.term}"</h4>
+                      <h4 className="text-slate-900 font-bold mb-2">Gramática: "{hotspot.term}"</h4>
                       <p className="text-slate-600 text-sm mb-4 leading-relaxed">{hotspot.explanation}</p>
                       <div className="space-y-1.5">
-                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Exemplos</span>
+                        <span className="text-[10px] font-bold text-slate-400 border-b border-slate-100 pb-1 mb-2 block uppercase tracking-tighter">Exemplos Adicionais</span>
                         {hotspot.examples.map((ex, idx) => (
-                          <div key={idx} className="bg-slate-50 px-3 py-1.5 rounded-lg text-xs font-mono text-slate-700">
+                          <div key={idx} className="bg-slate-50 px-3 py-2 rounded-xl text-xs font-bold text-emerald-700 border border-emerald-50/50">
                             {ex}
                           </div>
                         ))}
@@ -154,8 +163,8 @@ import { Lesson, LessonPart } from '../types';
 const MANUAL_LESSONS: Lesson[] = [
   {
     id: 'l1',
-    title: 'Fundamentos: Saudações',
-    description: 'Aprenda a cumprimentar e se apresentar com naturalidade.',
+    title: 'Fundamentos: Saudações e o Verbo Esti',
+    description: 'Aprenda a cumprimentar, se apresentar e usar o verbo mais importante.',
     parts: [
       { type: 'text', content: 'Saluton! O Esperanto é uma língua projetada para ser simples e lógica. "Saluton" é a saudação universal, derivada de "Saluti" (Saudar).' },
       { type: 'icon', content: 'Boas-vindas', iconName: 'smile' },
@@ -163,126 +172,190 @@ const MANUAL_LESSONS: Lesson[] = [
       { type: 'example', content: '"Bonan tagon!" (Bom dia/Boa tarde - literalmente "Bom dia"). O "-n" final indica que estamos desejando algo a alguém.' },
       { type: 'example', content: '"Bonan vesperon!" (Boa noite - ao chegar) e "Bonan nokton!" (Boa noite - ao dormir).' },
       { type: 'question', content: 'Qual saudação você usaria ao encontrar alguém durante o dia?', options: ['Bonan tagon', 'Bonan nokton', 'Saluton nokto'], correctAnswer: 'Bonan tagon', explanation: '"Tago" significa dia, e "Bonan tagon" é a forma padrão de saudação diurna.' },
+      { type: 'combine', content: 'Complete a saudação "Boa noite" (ao dormir):', root: 'Bonan', targetMeaning: 'Boa noite', options: ['tagon', 'vesperon', 'nokton'], correctAnswer: 'nokton', explanation: '"Nokto" é noite (sono), "Vespero" é tarde/noite (chegada).' },
       { type: 'text', content: 'Ao se apresentar, você pode usar "Mia nomo estas..." ou simplesmente "Mi estas...".' },
       { type: 'example', content: '"Saluton, mia nomo estas Johano" (Olá, meu nome é João).' },
       { type: 'text', content: 'Note que "estas" é o verbo ser/estar no presente, e ele é IMUTÁVEL. Não existe "sou", "somos", "são"... é tudo "estas"!' },
-      { type: 'example', content: '"Mi estas", "Vi estas", "Ni estas" - Simples, não?' },
-      { type: 'question', content: 'Como se diz "Nós somos" em Esperanto?', options: ['Ni estas', 'Ni nomas', 'Ni esti'], correctAnswer: 'Ni estas', explanation: 'O verbo "estas" serve para todas as pessoas gramaticais.' },
+      { type: 'example', content: '"Mi estas", "Vi estas", "Ni estas" - Simples, não? No passado usamos "estis" e no futuro "estos".' },
+      { type: 'combine', content: 'Como dizer "Eu sou" em Esperanto?', root: 'Mi', targetMeaning: 'Eu sou', options: ['estas', 'estis', 'estos'], correctAnswer: 'estas', explanation: '"Estas" é o presente para todas as pessoas.' },
+      { type: 'question', content: 'Como se diz "Nós fomos" (passado de ser) em Esperanto?', options: ['Ni estas', 'Ni estis', 'Ni estos'], correctAnswer: 'Ni estis', explanation: 'O sufixo -is indica o passado.' },
       { type: 'text', content: 'Para perguntar "Como vai?", usamos "Kiel vi fartas?". "Kiel" é como, "vi" é você, e "fartas" é o verbo para "passar bem/mal/estar de saúde".' },
-      { type: 'example', content: '"Mi fartas bone, dankon!" (Vou bem, obrigado!). "Bone" é bem, e "Dankon" é obrigado.' }
+      { type: 'example', content: '"Mi fartas bone, dankon!" (Vou bem, obrigado!). "Bone" é bem (advérbio terminando em -e), e "Dankon" é obrigado.' },
+      { type: 'question', content: 'Como se diz "Até a vista" ou "Tchau"?', options: ['Dankon', 'Saluton', 'Ĝis revido'], correctAnswer: 'Ĝis revido', explanation: '"Ĝis" significa até, e "revido" é o ato de rever.' }
     ]
   },
   {
     id: 'l2',
     title: 'Gramática: O e A (Substantivos e Adjetivos)',
-    description: 'A regra de ouro: como distinguir nomes de qualidades.',
+    description: 'A regra de ouro: como distinguir nomes de qualidades e criar novas palavras.',
     parts: [
       { type: 'icon', content: 'Lógica Pura', iconName: 'zap' },
       { type: 'text', content: 'No Esperanto, a terminação das palavras revela sua função gramatical. É como uma etiqueta que diz o que a palavra é.' },
-      { type: 'text', content: 'Todos os substantivos (nomes de seres, objetos, ideias) terminam em -O.' },
-      { type: 'example', content: '"Domo" (Casa), "Libro" (Livro), "Hundo" (Cão), "Amiko" (Amigo).' },
+      { type: 'text', content: 'Todos os substantivos (nomes de seres, objetos, ideias) terminam em -o. Ex: "Hundo" (Cão), "Amiko" (Amigo).' },
+      { type: 'example', content: '"Domo" (Casa), "Libro" (Livro), "Tablo" (Mesa), "Knabo" (Menino).' },
       { type: 'question', content: 'Qual dessas palavras é obrigatoriamente um substantivo?', options: ['Bela', 'Kuri', 'Tablo'], correctAnswer: 'Tablo', explanation: 'Apenas "Tablo" termina em -o, indicando um objeto (mesa).' },
-      { type: 'text', content: 'Todos os adjetivos (características, qualidades) terminam em -A. Você pode criar um adjetivo a partir de qualquer substantivo!' },
+      { type: 'combine', content: 'Se "Amiko" é amigo, como é a raiz para "Amizade"? (Substantivo)', root: 'Amik', targetMeaning: 'Amigo', options: ['-o', '-a', '-e'], correctAnswer: '-o', explanation: 'Substantivos usam a terminação -o.' },
+      { type: 'text', content: 'Todos os adjetivos (características, qualidades) terminam em -a. Você pode criar um adjetivo a partir de qualquer substantivo simplesmente trocando a letra final!' },
       { type: 'example', content: '"Suno" (Sol) -> "Suna" (Solar). "Nokto" (Noite) -> "Nokta" (Noturno).' },
-      { type: 'example', content: '"Bela domo" (Uma casa bela). Note que em Esperanto o adjetivo geralmente vem ANTES do substantivo.' },
-      { type: 'question', content: 'Como você diria "Um amigo amigável"? (Amiko = Amigo)', options: ['Amika amiko', 'Amiko amiko', 'Amika amika'], correctAnswer: 'Amika amiko', explanation: 'Amika (adjetivo) + amiko (substantivo).' },
-      { type: 'text', content: 'Essa lógica permite que você entenda palavras que nunca viu antes, apenas olhando para a última letra!' }
+      { type: 'example', content: '"Bela domo" (Uma casa bela). Note que em Esperanto o adjetivo geralmente vem ANTES do substantivo, mas pode vir depois se quiser dar ênfase.' },
+      { type: 'combine', content: 'Como transformar "Flor(o)" em adjetivo (Floral)?', root: 'Flor', targetMeaning: 'Floral', options: ['-o', '-a', '-is'], correctAnswer: '-a', explanation: 'Adjetivos usam a terminação -a.' },
+      { type: 'question', content: 'Como você diria "Um menino bom"? (Knabo = Menino, Bona = Bom)', options: ['Bona knabo', 'Bono knaba', 'Knabo bonas'], correctAnswer: 'Bona knabo', explanation: 'Bona (adjetivo com -a) + knabo (substantivo com -o).' },
+      { type: 'question', content: 'Qual a tradução de "Granda hundo"?', options: ['Cachorro grande', 'Cachorro pequeno', 'Gato grande'], correctAnswer: 'Cachorro grande', explanation: 'Granda = Grande, Hundo = Cachorro.' }
     ]
   },
   {
     id: 'l3',
-    title: 'Verbos: O Tempo das Coisas',
-    description: 'Domine os verbos no presente, passado e futuro.',
+    title: 'Verbos: O Tempo das Coisas (Presente, Passado e Futuro)',
+    description: 'Domine os verbos sem tabelas infinitas de conjugação.',
     parts: [
       { type: 'text', content: 'Verbos em português são complexos. Em Esperanto, eles são um alívio! Não existem conjugações por pessoa (eu, tu, ele...).' },
-      { type: 'example', content: 'O infinitivo (forma base) termina em -I. "Lerni" (Aprender), "Manĝi" (Comer), "Labori" (Trabalhar).' },
-      { type: 'text', content: 'Basta trocar o -i por uma das 3 terminações de tempo:' },
-      { type: 'example', content: 'Presente: -AS. "Mi lernas" (Eu aprendo), "Ni lernas" (Nós aprendemos).' },
-      { type: 'example', content: 'Passado: -IS. "Mi lernis" (Eu aprendi), "Ili lernis" (Eles aprenderam).' },
-      { type: 'example', content: 'Futuro: -OS. "Mi lernos" (Eu aprenderei), "Vi lernos" (Você aprenderá).' },
+      { type: 'example', content: 'O infinitivo (forma base) termina em -i. "Lerni" (Aprender), "Manĝi" (Comer), "Labori" (Trabalhar).' },
+      { type: 'text', content: 'Basta trocar o -i por uma das 3 terminações de tempo universal:' },
+      { type: 'example', content: 'Presente: -as. "Mi lernas" (Eu aprendo), "Ni lernas" (Nós aprendemos).' },
+      { type: 'combine', content: 'Como dizer "Eu como" (Presente)?', root: 'Mi manĝ', targetMeaning: 'Eu como', options: ['-as', '-is', '-os'], correctAnswer: '-as', explanation: '-as é a marca do presente.' },
+      { type: 'example', content: 'Passado: -is. "Mi lernis" (Eu aprendi), "Ili lernis" (Eles aprenderam).' },
+      { type: 'combine', content: 'Como dizer "Eu aprendi" (Passado)?', root: 'Mi lern', targetMeaning: 'Eu aprendi', options: ['-as', '-is', '-os'], correctAnswer: '-is', explanation: '-is é a marca do passado.' },
+      { type: 'example', content: 'Futuro: -os. "Mi lernos" (Eu aprenderei), "Vi lernos" (Você aprenderá).' },
+      { type: 'combine', content: 'Como dizer "Nós trabalharemos" (Futuro)?', root: 'Ni labor', targetMeaning: 'Nós trabalharemos', options: ['-as', '-is', '-os'], correctAnswer: '-os', explanation: '-os é a marca do futuro.' },
       { type: 'question', content: 'Se "Vidi" é ver, como se diz "Eles verão" (futuro)?', options: ['Ili vidas', 'Ili vidis', 'Ili vidos'], correctAnswer: 'Ili vidos', explanation: 'O sufixo -os indica sempre o futuro, independente de quem faz a ação.' },
-      { type: 'text', content: 'Existe também o modo Volitivo (ordens/desejos) que termina em -U.' },
-      { type: 'example', content: '"Lernu!" (Aprenda!), "Venu ĉi tien" (Venha aqui).' },
-      { type: 'question', content: 'Qual seria o comando para "Coma!"? (Manĝi = Comer)', options: ['Manĝas!', 'Manĝu!', 'Manĝi!'], correctAnswer: 'Manĝu!', explanation: 'O sufixo -u é usado para imperativo e vontades.' }
+      { type: 'text', content: 'Além dos tempos, temos o modo Volitivo (ordens/desejos) que termina em -u.' },
+      { type: 'example', content: '"Lernu!" (Aprenda!), "Venu ĉi tien" (Venha aqui). "Mi volas ke vi lernu" (Eu quero que você aprenda).' },
+      { type: 'question', content: 'Qual seria o comando para "Coma!"? (Manĝi = Comer)', options: ['Manĝas!', 'Manĝu!', 'Manĝi!'], correctAnswer: 'Manĝu!', explanation: 'O sufixo -u é usado para imperativo e vontades.' },
+      { type: 'question', content: 'Como se diz "Eu quero ver" (Infinitivo)?', options: ['Mi volas vidu', 'Mi volas vidi', 'Mi volas vidas'], correctAnswer: 'Mi volas vidi', explanation: 'Usamos o infinitivo (-i) após verbos de querer/poder.' }
     ]
   },
   {
     id: 'l4',
-    title: 'O Plural (-J)',
-    description: 'Como falar de mais de um objeto ou pessoa.',
+    title: 'O Plural (-j) e os Advérbios (-e)',
+    description: 'Como falar de grupos e descrever como as ações acontecem.',
     parts: [
-      { type: 'text', content: 'Para indicar plural no Esperanto, adicionamos a letra -J ao final da palavra. Ela tem som de "i" curto, como em "pai".' },
+      { type: 'text', content: 'Para indicar plural no Esperanto, adicionamos a letra -j ao final da palavra. Ela tem som de "i" curto (como na palavra "lei").' },
       { type: 'example', content: '"Domo" (casa) -> "Domoj" (casas). "Amiko" (amigo) -> "Amikoj" (amigos).' },
       { type: 'text', content: 'Uma regra vital: o adjetivo deve CONCORDAR com o substantivo. Se o nome está no plural, a qualidade também deve estar!' },
       { type: 'example', content: '"Bela domo" (Bela casa) -> "Belaj domoj" (Belas casas).' },
+      { type: 'text', content: 'Vamos praticar! Como você transformaria estas palavras para o plural?' },
+      { type: 'combine', content: 'Transforme o substantivo "Amiko" (Amigo) em plural:', root: 'Amiko', targetMeaning: 'Amigos', options: ['-o', '-as', '-j'], correctAnswer: '-j', explanation: 'O sufixo -j é a marca universal do plural para substantivos e adjetivos.' },
+      { type: 'combine', content: 'Agora transforme o adjetivo "Bona" (Bom) em plural:', root: 'Bona', targetMeaning: 'Bons', options: ['-a', '-e', '-j'], correctAnswer: '-j', explanation: 'Lembre-se: no Esperanto, o adjetivo SEMPRE concorda com o substantivo em número.' },
+      { type: 'text', content: 'Prática de concordância: Se temos "Hundo" (Cão) e "Granda" (Grande), como fica o plural?' },
+      { type: 'question', content: 'Como se diz "Cães grandes"?', options: ['Grandaj hundoj', 'Granda hundoj', 'Grandaj hundo'], correctAnswer: 'Grandaj hundoj', explanation: 'A concordância é obrigatória: se o substantivo ganha -j, o adjetivo também ganha.' },
       { type: 'question', content: 'Qual a tradução correta para "Maçãs vermelhas"? (Pomo = Maçã, Ruĝa = Vermelho)', options: ['Ruĝaj pomoj', 'Ruĝa pomoj', 'Ruĝaj pomo'], correctAnswer: 'Ruĝaj pomoj', explanation: 'Ambos (adjetivo e substantivo) recebem o -j do plural.' },
-      { type: 'text', content: 'Note que até em frases complexas, essa harmonia sonora do "-j" ajuda a saber o que pertence a quê.' }
+      { type: 'question', content: 'Como se diria "Casas grandes"? (Granda = Grande, Domo = Casa)', options: ['Granda domoj', 'Grandaj domo', 'Grandaj domoj'], correctAnswer: 'Grandaj domoj', explanation: 'Lembre-se: no plural, tanto o adjetivo quanto o substantivo precisam do sufixo -j.' },
+      { type: 'text', content: 'Agora, para descrever COMO algo é feito, usamos o advérbio, que termina em -e.' },
+      { type: 'example', content: '"Rapida" (Rápido - adj.) -> "Rapide" (Rapidamente - adv.). "Li kuras rapide" (Ele corre rapidamente).' },
+      { type: 'question', content: 'Como se diz "Ela canta bem"? (Bona = Bom, Kanti = Cantar)', options: ['Ŝi kantas bona', 'Ŝi kantas bone', 'Ŝi kantas bonu'], correctAnswer: 'Ŝi kantas bone', explanation: 'O advérbio "bone" descreve o modo de cantar.' },
+      { type: 'text', content: 'Veja mais exemplos de como transformar adjetivos em advérbios:' },
+      { type: 'example', content: '"Flua" (fluente) -> "Flue" (fluentemente). Ex: "Mi parolas Esperanton flue".' },
+      { type: 'example', content: '"Bona" (bom) -> "Bone" (bem). Ex: "Vi laboras tre bone".' },
+      { type: 'example', content: '"Facila" (fácil) -> "Facile" (facilmente). Ex: "Esperanto estas lernata facile".' },
+      { type: 'question', content: 'Como se diz "Eles correm rapidamente"? (Rapida = Rápido, Kuri = Correr)', options: ['Ili kuras rapida', 'Ili kuras rapide', 'Ili kuras rapidu'], correctAnswer: 'Ili kuras rapide', explanation: 'Usamos a terminação "-e" para indicar o modo como a ação é realizada.' }
     ]
   },
   {
     id: 'l5',
-    title: 'O Famoso Acusativo (-N)',
-    description: 'A parte mais poderosa e flexível da língua.',
+    title: 'O Famoso Acusativo (-n)',
+    description: 'A ferramenta secreta para liberdade total na ordem das palavras.',
     parts: [
-      { type: 'text', content: 'O sufixo -N é usado para marcar o "Objeto Direto" — ou seja, quem ou o que recebe a ação do verbo.' },
-      { type: 'example', content: '"La hundo amas la katon" (O cão ama o gato). O gato é quem recebe o amor, por isso leva o -N.' },
-      { type: 'example', content: '"La katon amas la hundo" - O sentido é exatamente o mesmo! O -N nos diz quem é o objeto, não importa a ordem.' },
-      { type: 'text', content: 'Isso dá ao Esperanto uma flexibilidade imensa, típica de línguas como o latim ou russo, mas sem a complexidade delas.' },
+      { type: 'text', content: 'O sufixo -n é usado para marcar o "Objeto Direto" — ou seja, quem ou o que recebe a ação do verbo.' },
+      { type: 'example', content: '"La hundo amas la katon" (O cão ama o gato). O gato é quem recebe o amor, por isso leva o -n.' },
+      { type: 'combine', content: 'Complete: "Mi vidas la domo..." (Eu vejo a casa):', root: 'domo', targetMeaning: 'casa (objeto)', options: ['-n', '-j', '-o'], correctAnswer: '-n', explanation: 'O objeto da visão recebe o acusativo -n.' },
+      { type: 'example', content: '"La katon amas la hundo" - O sentido é exatamente o mesmo! O -n nos diz quem é o objeto, não importa a ordem.' },
+      { type: 'text', content: 'Isso dá ao Esperanto uma flexibilidade imensa. Você pode escolher a ordem que soa melhor ou que destaca o que você quer.' },
       { type: 'question', content: 'Na frase "Mi manĝas pomon", o que está sendo comido?', options: ['Eu', 'A maçã', 'Não dá pra saber'], correctAnswer: 'A maçã', explanation: '"Pomon" tem o -n do acusativo, logo é o objeto da ação de comer.' },
-      { type: 'text', content: 'Se você tem mais de um objeto, o -N vem depois do -J. Ex: "Mi manĝas pomojn" (Eu como maçãs).' }
+      { type: 'combine', content: 'Como dizer "O menino vê o amigo"? (Knabo = Menino, Amiko = Amigo, Vidi = Ver)', root: 'La knabo vidas la amiko', targetMeaning: 'O menino vê o amigo', options: ['-n', '-s', '-u'], correctAnswer: '-n', explanation: 'Amiko é o objeto, então recebe -n.' },
+      { type: 'text', content: 'Se você tem mais de um objeto, o -n vem DEPOIS do -j. Primeiro o plural, depois o objeto.' },
+      { type: 'example', content: '"Mi vidas belajn florojn" (Eu vejo belas flores). Tanto o adjetivo quanto o substantivo recebem -j e depois -n.' },
+      { type: 'question', content: 'Qual a ordem correta dos sufixos?', options: ['Radical + n + j', 'Radical + j + n', 'Não importa'], correctAnswer: 'Radical + j + n', explanation: 'Primeiro indicamos a quantidade (-j), depois a função na frase (-n).' }
     ]
   },
   {
     id: 'l6',
-    title: 'Pronomes Pessoais',
-    description: 'Como se referir a pessoas e coisas.',
+    title: 'Pronomes e Possessivos',
+    description: 'Aprendendo a se situar e indicar posse.',
     parts: [
-      { type: 'text', content: 'Os pronomes são a base de qualquer frase. Em Esperanto, eles são curtos e terminam em -i.' },
-      { type: 'example', content: 'Mi (Eu), Vi (Você/Vocês), Li (Ele), Ŝi (Ela), Ĝi (Ele/Ela - neutro para objetos ou animais).' },
-      { type: 'example', content: 'Ni (Nós), Ili (Eles/Elas).' },
-      { type: 'text', content: 'Curiosidade: "Vi" serve tanto para o singular quanto para o plural (você/vocês), simplificando muito o aprendizado!' },
-      { type: 'question', content: 'Como se diz "Ela" em Esperanto?', options: ['Mi', 'Li', 'Ŝi'], correctAnswer: 'Ŝi', explanation: '"Ŝi" (pronunciado como o "ch" de bicho) é ela.' },
-      { type: 'text', content: 'Para transformar pronome em possessivo (meu, seu, nosso), basta adicionar a terminação de adjetivo -A.' },
-      { type: 'example', content: '"Mia" (Meu/Minha), "Via" (Teu/Seu), "Nia" (Nosso/Nossa).' },
-      { type: 'question', content: 'Como se traduziria "Nosso amigo"? (Amiko = Amigo)', options: ['Nia amikon', 'Nia amiko', 'Mi amiko'], correctAnswer: 'Nia amiko', explanation: 'Nia (Nosso) + amiko (Amigo).' }
+      { type: 'text', content: 'Os pronomes são curtos e todos terminam em -i.' },
+      { type: 'example', content: 'Mi (Eu), Vi (Você/Vocês), Li (Ele), Ŝi (Ela), Ĝi (Ele/Ela - neutro para objetos/animais), Ni (Nós), Ili (Eles/Elas).' },
+      { type: 'question', content: 'Como se diz "Ela" em Esperanto?', options: ['Mi', 'Li', 'Ŝi'], correctAnswer: 'Ŝi', explanation: '"Ŝi" é o pronome feminino singular.' },
+      { type: 'combine', content: 'Como dizer "Nós" em Esperanto?', root: 'N', targetMeaning: 'Nós', options: ['-i', '-a', '-o'], correctAnswer: '-i', explanation: 'Todos os pronomes pessoais terminam em -i.' },
+      { type: 'text', content: 'Lembra da regra do -A para adjetivos? Se aplicarmos aos pronomes, criamos os possessivos!' },
+      { type: 'example', content: 'Mi -> Mia (Meu/Minha). Vi -> Via (Teu/Seu). Ni -> Nia (Nosso/Nossa).' },
+      { type: 'combine', content: 'Como transformar "Vi" (Você) em "Seu/Teu"?', root: 'Vi', targetMeaning: 'Seu', options: ['-a', '-o', '-e'], correctAnswer: '-a', explanation: 'O sufixo -a cria a ideia de posse (adjetivo).' },
+      { type: 'example', content: '"Mia hundo" (Meu cão). "Niaj libroj" (Nossos livros). Note que o possessivo também concorda em plural ou acusativo!' },
+      { type: 'question', content: 'Como se diz "Eu amo meu cachorro"? (Ami = Amar, Hundo = Cachorro)', options: ['Mi amas mia hundo', 'Mi amas mian hundon', 'Min amas mian hundon'], correctAnswer: 'Mi amas mian hundon', explanation: '"mian hundon" precisa do acusativo pois é o objeto do amor.' },
+      { type: 'question', content: 'O que significa "Ili"?', options: ['Nós', 'Vocês', 'Eles/Elas'], correctAnswer: 'Eles/Elas', explanation: '"Ili" é o plural de terceira pessoa.' }
     ]
   },
   {
     id: 'l7',
-    title: 'Números e Contagem',
-    description: 'Aprenda a contar de 1 a 10 e além.',
+    title: 'Números e Lógica Decimal',
+    description: 'Contar é como encaixar peças de um quebra-cabeça.',
     parts: [
       { type: 'text', content: 'Contar no Esperanto é extremamente lógico e segue o sistema decimal de forma pura.' },
       { type: 'example', content: '1: Unu, 2: Du, 3: Tri, 4: Kvar, 5: Kvin, 6: Ses, 7: Sep, 8: Ok, 9: Naŭ, 10: Dek.' },
-      { type: 'text', content: 'De 11 a 19, basta dizer "Dek" (10) seguido do número.' },
-      { type: 'example', content: '11: Dek unu (10 e 1), 12: Dek du, 19: Dek naŭ.' },
-      { type: 'text', content: 'Para dezenas (20, 30...), colocamos o número ANTES do "Dek".' },
-      { type: 'example', content: '20: Dudek (2 dezes), 30: Tridek, 90: Naŭdek.' },
-      { type: 'question', content: 'Como se diz "Vinte e dois" (22)?', options: ['Dudek du', 'Dek du du', 'Dudek dek'], correctAnswer: 'Dudek du', explanation: 'Dudek (20) + du (2).' },
-      { type: 'text', content: 'Cent (100) e Mil (1000) seguem a mesma regra lógica. "Dukvarcent" seria 2.400?' },
-      { type: 'question', content: 'Qual o valor de "Kvindek tri"?', options: ['53', '35', '15'], correctAnswer: '53', explanation: 'Kvin (5) + dek (dezes) + tri (3) = 53.' }
+      { type: 'question', content: 'Como se diz o número 4?', options: ['Du', 'Tri', 'Kvar'], correctAnswer: 'Kvar', explanation: 'Unu, du, tri, kvar...' },
+      { type: 'text', content: 'De 11 a 19: "Dek" (10) seguido do número.' },
+      { type: 'example', content: '11: Dek unu (10 e 1), 12: Dek du, 15: Dek kvin.' },
+      { type: 'combine', content: 'Como dizer 13?', root: 'Dek', targetMeaning: 'Treze', options: ['unu', 'du', 'tri'], correctAnswer: 'tri', explanation: '10 (dek) + 3 (tri) = 13.' },
+      { type: 'text', content: 'Para dezenas (20, 30...): colocamos o número ANTES do "Dek".' },
+      { type: 'example', content: '20: Dudek (2 dezes), 30: Tridek, 50: Kvindek.' },
+      { type: 'question', content: 'Como se diz "Cinquenta e cinco" (55)?', options: ['Kvindek kvin', 'Dek kvin kvin', 'Kvin dek kvin'], correctAnswer: 'Kvindek kvin', explanation: 'Kvindek (50) + kvin (5).' },
+      { type: 'combine', content: 'E o número 20?', root: 'Du', targetMeaning: 'Vinte', options: ['dek', 'mil', 'cent'], correctAnswer: 'dek', explanation: '2 dezenas = Dudek.' },
+      { type: 'text', content: 'Cent (100) e Mil (1000) seguem o mesmo padrão. "Dukvarcent" seria 2.400? Não, centenas funcionam como as dezenas: "Du mil kvarcent" (2.400).' },
+      { type: 'question', content: 'Como se diz 100?', options: ['Cent', 'Mil', 'Dek'], correctAnswer: 'Cent', explanation: 'Cent é cem.' }
     ]
   },
   {
     id: 'l8',
-    title: 'Afixos: O Poder de Criação',
-    description: 'Crie centenas de palavras a partir de uma única raiz.',
+    title: 'Afixos: O Poder de Multiplicação do Vocabulário',
+    description: 'Transforme uma palavra em dezenas usando prefixos e sufixos.',
     parts: [
-      { type: 'text', content: 'O Esperanto é como um Lego. Você tem peças básicas (raízes) e adiciona prefixos e sufixos para mudar o sentido de forma matemática.' },
-      { type: 'text', content: 'Prefixo "MAL-": Inverte completamente o sentido. É o oposto perfeito.' },
-      { type: 'example', content: '"Bona" (Bom) -> "Malbona" (Mau). "Granda" (Grande) -> "Malgranda" (Pequeno).' },
-      { type: 'question', content: 'Se "Alta" é alto, o que significa "Malalta"?', options: ['Muito alto', 'Baixo', 'Largo'], correctAnswer: 'Baixo', explanation: 'Mal- inverte o sentido de altura, resultando em baixo.' },
-      { type: 'text', content: 'Sufixo "-IN-": Indica o gênero feminino.' },
-      { type: 'example', content: '"Patro" (Pai) -> "Patrino" (Mãe). "Frato" (Irmão) -> "Fratino" (Irmã).' },
-      { type: 'combine', content: 'Vamos praticar! Como se diz "Mãe" (Pai feminino)?', root: 'Patr', options: ['-in-o', '-eg-o', '-et-o'], correctAnswer: '-in-o', targetMeaning: 'Mãe', explanation: 'Patr (Pai) + -in- (Feminino) + -o (Substantivo) = Patrino.' },
-      { type: 'text', content: 'Sufixos "-EG-" e "-ET-": Aumentativo e Diminutivo.' },
+      { type: 'text', content: 'O Esperanto é como um Lego. Você tem raízes básicas e adiciona "peças" (afixos) para mudar o sentido.' },
+      { type: 'text', content: 'Prefixo mal-: Inverte completamente o sentido (o oposto perfeito).' },
+      { type: 'example', content: '"Bona" (Bom) -> "Malbona" (Mau). "Fermi" (Fechar) -> "Malfermi" (Abrir).' },
+      { type: 'question', content: 'Se "Alta" é alto, o que significa "Malalta"?', options: ['Muito alto', 'Baixo', 'Largo'], correctAnswer: 'Baixo', explanation: 'Mal- inverte a qualidade.' },
+      { type: 'combine', content: 'Qual o oposto de "Feliĉa" (Feliz)?', root: 'feliĉa', targetMeaning: 'Infeliz', options: ['Bo-', 'Ge-', 'Mal-'], correctAnswer: 'Mal-', explanation: 'O prefixo Mal- indica o oposto.' },
+      { type: 'text', content: 'Sufixo -in-: Indica o gênero feminino.' },
+      { type: 'example', content: '"Patro" (Pai) -> "Patrino" (Mãe). "Knabo" (Menino) -> "Knabino" (Menina).' },
+      { type: 'combine', content: 'Transforme "Frato" (Irmão) em "Irmã":', root: 'Frat', targetMeaning: 'Irmã', options: ['-in-o', '-eg-o', '-et-o'], correctAnswer: '-in-o', explanation: '-in- é o sufixo feminino.' },
+      { type: 'text', content: 'Sufixos -eg- e -et-: Intensidade (Aumentativo e Diminutivo).' },
       { type: 'example', content: '"Domo" (Casa) -> "Domego" (Casarão) / "Dometo" (Casinha).' },
-      { type: 'text', content: 'Sufixo "-IST-": Indica profissão ou alguém que se ocupa habitualmente de algo.' },
-      { type: 'example', content: '"Instrui" (Ensinar) -> "Instruisto" (Professor). "Arto" (Arte) -> "Artisto" (Artista).' },
-      { type: 'question', content: 'Qual seria o profissional que trabalha com dentes? (Dento = Dente)', options: ['Dentisto', 'Mal-dento', 'Dent-ino'], correctAnswer: 'Dentisto', explanation: 'O sufixo -ist indica o profissional da área.' }
+      { type: 'question', content: 'Qual seria uma "Menininha"? (Knabo = Menino)', options: ['Knabineto', 'Knabinego', 'Malknabino'], correctAnswer: 'Knabineto', explanation: 'Knab- (raiz) + -in- (feminino) + -et- (diminutivo) + -o (substantivo).' },
+      { type: 'question', content: 'O que significa "Varmega"? (Varma = Quente)', options: ['Frio', 'Morno', 'Muito quente'], correctAnswer: 'Muito quente', explanation: '-eg- aumenta a intensidade.' }
+    ]
+  },
+  {
+    id: 'l9',
+    title: 'Preposições e Direção',
+    description: 'Aprendendo a situar objetos no espaço e no tempo.',
+    parts: [
+      { type: 'text', content: 'As preposições conectam palavras indicando lugar, tempo ou modo. Elas NÃO levam acusativo (-n), a menos que indiquem MOVIMENTO.' },
+      { type: 'example', content: 'En (Em/Dentro), Sur (Sobre), Sub (Sob/Debaixo), Antaŭ (Na frente), Malantaŭ (Atrás).' },
+      { type: 'example', content: '"La libro estas sur la tablo" (O livro está sobre a mesa).' },
+      { type: 'question', content: 'Como se diz "Debaixo" de algo?', options: ['Sur', 'En', 'Sub'], correctAnswer: 'Sub', explanation: 'Sub = debaixo/sob.' },
+      { type: 'text', content: 'Regra especial: Se houver movimento EM DIREÇÃO a algum lugar, usamos o -n no lugar.' },
+      { type: 'example', content: '"Mi kuras en la domo" (Eu corro dentro da casa - já estou lá). "Mi kuras en la domon" (Eu corro para dentro da casa - vindo de fora).' },
+      { type: 'combine', content: 'Movimento para dentro de "La ĝardeno" (O jardim):', root: 'La ĝardenon', targetMeaning: 'Para o jardim', options: ['en', 'sur', 'sub'], correctAnswer: 'en', explanation: 'En = em/para dentro.' },
+      { type: 'question', content: 'O que significa "Mi sidas sur la seĝo"?', options: ['Eu sento na cadeira', 'Eu sento em direção à cadeira', 'A cadeira está em cima de mim'], correctAnswer: 'Eu sento na cadeira', explanation: 'Sidi (estar sentado) indica estado, então não há -n de movimento.' }
+    ]
+  },
+  {
+    id: 'l10',
+    title: 'A Tabela de Correlativos (Introdução)',
+    description: 'Os "KI" e "TI" que formam perguntas e respostas lógicas.',
+    parts: [
+      { type: 'text', content: 'Muitas palavras em português como "onde", "quando", "quem" parecem aleatórias. No Esperanto, elas formam uma matriz lógica.' },
+      { type: 'text', content: 'As palavras de pergunta começam com ki-. As de resposta específica começam com ti-.' },
+      { type: 'example', content: 'Kie? (Onde?) -> Tie (Lá/Ali). Kie estas vi? (Onde está você?).' },
+      { type: 'combine', content: 'Complete a pergunta: "... estas vi?" (Onde está você?)', root: 'e', targetMeaning: 'Onde', options: ['Ki', 'Ti', 'Ĉi'], correctAnswer: 'Ki', explanation: 'Ki- inicia perguntas.' },
+      { type: 'example', content: 'Kiu? (Quem/Qual pessoa?) -> Tiu (Aquele/Aquela pessoa).' },
+      { type: 'example', content: 'Kiam? (Quando?) -> Tiam (Naquele tempo).' },
+      { type: 'combine', content: 'Complete a resposta: "... estas li." (Lá está ele)', root: 'e', targetMeaning: 'Lá/Ali', options: ['Ti', 'Ki', 'Ni'], correctAnswer: 'Ti', explanation: 'Ti- indica algo apontado ou específico.' },
+      { type: 'question', content: 'Se você quer perguntar "Quem é este?", qual palavra usaria?', options: ['Kie', 'Kiu', 'Kiam'], correctAnswer: 'Kiu', explanation: 'Kiu refere-se a indivíduos ou coisas específicas.' },
+      { type: 'text', content: 'Essa matriz tem 45 combinações que cobrem quase tudo! Veremos mais detalhes nas lições avançadas.' },
+      { type: 'question', content: 'Como se diz "Qual tipo de"?', options: ['Kia', 'Kie', 'Kio'], correctAnswer: 'Kia', explanation: 'O final -a indica qualidade/tipo.' }
     ]
   }
 ];
+
 
 const THEMES = [
   { name: 'Natureza', icon: 'globe', terms: ['Arbo', 'Floro', 'Besto', 'Suno', 'Luno'] },
@@ -297,13 +370,21 @@ const THEMES = [
   { name: 'Compras', icon: 'shopping', terms: ['Prezo', 'Butiko', 'Mono', 'Aĉeti', 'Vendi'] }
 ];
 
-const THEME_CONTENT: Record<string, { intro: string, questions: {q: string, o: string[], a: string, e: string}[] }> = {
+const THEME_CONTENT: Record<string, { intro: string, questions: {q: string, o: string[], a: string, e: string}[], combineQuestions: {c: string, r: string, m: string, o: string[], a: string, e: string}[] }> = {
   'Natureza': {
     intro: 'A natureza (Naturo) é descrita com precisão no Esperanto. Usamos o sufixo "-aro" para grupos. Assim, de "Arbo" (árvore) temos "Arbaro" (floresta). De "Membro" (membro) temos "Membraro" (corpo/conjunto de membros).',
     questions: [
       { q: 'O que é um "Birdo"?', o: ['Pássaro', 'Peixe', 'Inseto'], a: 'Pássaro', e: 'Birdo é uma raiz internacional que lembra o inglês "Bird".' },
       { q: 'Se "Floro" é flor, o que é um "Floraro"?', o: ['Uma flor grande', 'Um buquê ou jardim', 'Uma flor murcha'], a: 'Um buquê ou jardim', e: 'O sufixo -ar- indica um conjunto ou coletivo de coisas iguais.' },
-      { q: 'Qual o oposto de "Bela floro" (Bela flor)?', o: ['Malbela floro', 'Bela malfloro', 'Granda floro'], a: 'Malbela floro', e: 'O prefixo Mal- inverte a qualidade (adjetivo).' }
+      { q: 'Qual o oposto de "Bela floro" (Bela flor)?', o: ['Malbela floro', 'Bela malfloro', 'Granda floro'], a: 'Malbela floro', e: 'O prefixo Mal- inverte a qualidade (adjetivo).' },
+      { q: 'Como se diz "Água" em Esperanto?', o: ['Akvo', 'Viro', 'Luno'], a: 'Akvo', e: 'Akvo é a raiz para água.' },
+      { q: 'O que é o "Suno"?', o: ['Sol', 'Lua', 'Estrela'], a: 'Sol', e: 'Suno é o sol.' }
+    ],
+    combineQuestions: [
+      { c: 'Como transformar "Arbo" (árvore) em plural?', r: 'Arbo', m: 'Árvores', o: ['-o', '-j', '-as'], a: '-j', e: 'O -j é o plural universal.' },
+      { c: 'Como dizer que algo é "Solar" vindo de "Suno"?', r: 'Sun', m: 'Solar', o: ['-o', '-a', '-e'], a: '-a', e: 'O sufixo -a cria adjetivos.' },
+      { c: 'Como transformar "Flor" em "Flores"?', r: 'Flor', m: 'Flores', o: ['-o', '-j', '-n'], a: '-oj', e: 'Terminação de plural para substantivos é -oj.' },
+      { c: 'Muitos animais: de "Besto" (animal) para "Manada/Grupo":', r: 'Best', m: 'Animais (conjunto)', o: ['-aro', '-ejo', '-ilo'], a: '-aro', e: 'Sufixo -aro indica coletivo.' }
     ]
   },
   'Tecnologia': {
@@ -311,7 +392,13 @@ const THEME_CONTENT: Record<string, { intro: string, questions: {q: string, o: s
     questions: [
       { q: 'O que é um "Reto"?', o: ['Rede/Internet', 'Roda', 'Retângulo'], a: 'Rede/Internet', e: 'Reto significa rede, e por extensão, a Internet (Interreto).' },
       { q: 'O que faz um "Presilo"? (Presi = Imprimir)', o: ['Scanner', 'Impressora', 'Monitor'], a: 'Impressora', e: 'Presi (imprimir) + ilo (ferramenta) = Impressora.' },
-      { q: 'Como se diz "Software"?', o: ['Softvaro', 'Programaro', 'Mola kodo'], a: 'Softvaro', e: 'Muitas palavras técnicas usam o sufixo -var- para conjuntos de mercadorias ou sistemas.' }
+      { q: 'Como se diz "Software"?', o: ['Softvaro', 'Programaro', 'Mola kodo'], a: 'Softvaro', e: 'Muitas palavras técnicas usam o sufixo -var- para conjuntos de mercadorias ou sistemas.' },
+      { q: 'O que significa "Klavi"?', o: ['Cantar', 'Teclar', 'Correr'], a: 'Teclar', e: 'Klavi é a ação de usar um teclado (Klavaro).' },
+      { q: 'O que é um "Televidilo"?', o: ['Televisão', 'Telescópio', 'Lanterna'], a: 'Televisão', e: 'Tele (longe) + vid (ver) + ilo (aparelho).' }
+    ],
+    combineQuestions: [
+      { c: 'Transforme "Skribi" (Escrever) na ferramenta "Caneta":', r: 'Skrib', m: 'Caneta/Lápis', o: ['-ilo', '-isto', '-ejo'], a: '-ilo', e: 'Sufixo -ilo indica ferramenta.' },
+      { c: 'Como dizer "Teclado" partindo de "Klavo" (Tecla)?', r: 'Klav', m: 'Teclado', o: ['-aro', '-ejo', '-ilo'], a: '-aro', e: 'Conjunto de teclas = Teclado.' }
     ]
   },
   'Viagem': {
@@ -319,7 +406,13 @@ const THEME_CONTENT: Record<string, { intro: string, questions: {q: string, o: s
     questions: [
       { q: 'O que significa "Aviadilo"?', o: ['Avião', 'Navio', 'Trem'], a: 'Avião', e: 'Avi- (voar) + ad (ação) + ilo (ferramenta).' },
       { q: 'Onde você pegaria um trem?', o: ['Stacidomo', 'Flughaveno', 'Vendejo'], a: 'Stacidomo', e: 'Stacio (estação) + domo (casa).' },
-      { q: 'O que é um "Bileto"?', o: ['Passagem/Bilhete', 'Dinheiro', 'Mapa'], a: 'Passagem/Bilhete', e: 'Raiz internacional fácil de reconhecer.' }
+      { q: 'O que é um "Bileto"?', o: ['Passagem/Bilhete', 'Dinheiro', 'Mapa'], a: 'Passagem/Bilhete', e: 'Raiz internacional fácil de reconhecer.' },
+      { q: 'Como se diz "Passaporte"?', o: ['Pasporto', 'Bileto', 'Vizo'], a: 'Pasporto', e: 'Raiz internacional.' },
+      { q: 'O que é uma "Valizo"?', o: ['Mala', 'Cama', 'Mesa'], a: 'Mala', e: 'Valizo é mala de viagem.' }
+    ],
+    combineQuestions: [
+      { c: 'Se "Urbo" é cidade, como dizer "Urbano"?', r: 'Urb', m: 'Urbano', o: ['-o', '-a', '-e'], a: '-a', e: 'Adjetivos terminam em -a.' },
+      { c: 'Como dizer "Caminho" vindo de "Vojo"?', r: 'Voj', m: 'Caminho (substantivo)', o: ['-o', '-a', '-e'], a: '-o', e: 'Substantivos têm final -o.' }
     ]
   },
   'Saúde': {
@@ -327,7 +420,13 @@ const THEME_CONTENT: Record<string, { intro: string, questions: {q: string, o: s
     questions: [
       { q: 'Como se diz "Doutor"?', o: ['Doktoro', 'Kuracisto', 'Sanigisto'], a: 'Kuracisto', e: 'Embora Doktoro exista para títulos acadêmicos, o médico é chamado de Kuracisto.' },
       { q: 'Qual a diferença entre "Sana" e "Malsana"?', o: ['Sério e Brincalhão', 'Saudável e Doente', 'Forte e Fraco'], a: 'Saudável e Doente', e: 'Mal- inverte o sentido de Sano (saúde).' },
-      { q: 'O que é o "Kapo"?', o: ['Coração', 'Cabeça', 'Mão'], a: 'Cabeça', e: 'Raiz internacional vinda do latim.' }
+      { q: 'O que é o "Kapo"?', o: ['Coração', 'Cabeça', 'Mão'], a: 'Cabeça', e: 'Raiz internacional vinda do latim.' },
+      { q: 'O que é "Dentisto"?', o: ['Dentista', 'Policial', 'Professor'], a: 'Dentista', e: 'Dento (dente) + isto (profissional).' },
+      { q: 'O que significa "Hospitalo"?', o: ['Hospital', 'Hospício', 'Hotel'], a: 'Hospital', e: 'Raiz internacional.' }
+    ],
+    combineQuestions: [
+      { c: 'Transforme "Sana" (Saudável) em "Saúde":', r: 'San', m: 'Saúde', o: ['-o', '-a', '-e'], a: '-o', e: 'Substantivos terminam em -o.' },
+      { c: 'Profissão vinda de "Kuraci" (Curar):', r: 'Kurac', m: 'Médico', o: ['-isto', '-ilo', '-ejo'], a: '-isto', e: '-isto indica profissão.' }
     ]
   },
   'Culinária': {
@@ -335,7 +434,13 @@ const THEME_CONTENT: Record<string, { intro: string, questions: {q: string, o: s
     questions: [
       { q: 'O que é "Forko"?', o: ['Garfo', 'Faca', 'Colher'], a: 'Garfo', e: 'Raiz similar ao inglês "Fork" e francês "Fourchette".' },
       { q: 'Como se diz "Açúcar"?', o: ['Sukero', 'Dolĉo', 'Salo'], a: 'Sukero', e: 'Raiz internacional.' },
-      { q: 'O que significa "Trinkaĵo"? (Trinki = Beber)', o: ['Alimento', 'Bebida', 'Copo'], a: 'Bebida', e: 'O sufixo -aĵ- indica algo concreto feito de uma raiz.' }
+      { q: 'O que significa "Trinkaĵo"? (Trinki = Beber)', o: ['Alimento', 'Bebida', 'Copo'], a: 'Bebida', e: 'O sufixo -aĵ- indica algo concreto feito de uma raiz.' },
+      { q: 'O que é "Pano"?', o: ['Pão', 'Panela', 'Pano'], a: 'Pão', e: 'Raiz para o alimento básico.' },
+      { q: 'Como se diz "Café"?', o: ['Kafo', 'Teo', 'Akvo'], a: 'Kafo', e: 'Kafo é café.' }
+    ],
+    combineQuestions: [
+      { c: 'Transforme "Manĝi" (Comer) em "Restaurante":', r: 'Manĝ', m: 'Restaurante/Local de comer', o: ['-isto', '-ilo', '-ejo'], a: '-ejo', e: 'Sufixo -ejo indica lugar.' },
+      { c: 'Algo concreto para comer vindo de "Manĝi":', r: 'Manĝ', m: 'Comida (alimento)', o: ['-aĵo', '-ilo', '-aro'], a: '-aĵo', e: '-aĵo indica coisa física.' }
     ]
   },
   'Música': {
@@ -343,7 +448,13 @@ const THEME_CONTENT: Record<string, { intro: string, questions: {q: string, o: s
     questions: [
       { q: 'O que é um "Aŭskultanto"?', o: ['Ouvinte', 'Cantor', 'Músico'], a: 'Ouvinte', e: 'Aŭskulti (ouvir) + ant- (quem faz) + o (indivíduo).' },
       { q: 'Qual o nome do "Violão"?', o: ['Gitaro', 'Violono', 'Fluto'], a: 'Gitaro', e: 'Raiz internacional.' },
-      { q: 'O que significa "Kanti"?', o: ['Dançar', 'Cantar', 'Tocar'], a: 'Cantar', e: 'Do latim "cantare".' }
+      { q: 'O que significa "Kanti"?', o: ['Dançar', 'Cantar', 'Tocar'], a: 'Cantar', e: 'Do latim "cantare".' },
+      { q: 'Como se diz "Volume" alto?', o: ['Laŭta', 'Mola', 'Longa'], a: 'Laŭta', e: 'Laŭta significa alto (som).' },
+      { q: 'O que é "Aplaŭdi"?', o: ['Aplaudir', 'Cantar', 'Vaiar'], a: 'Aplaudir', e: 'Raiz internacional.' }
+    ],
+    combineQuestions: [
+      { c: 'Transforme "Kanti" (Cantar) no profissional "Cantor":', r: 'Kant', m: 'Cantor', o: ['-ilo', '-isto', '-ejo'], a: '-isto', e: 'Sufixo -isto indica ocupação.' },
+      { c: 'Como transformar "Muziko" em adjetivo "Musical"?', r: 'Muzik', m: 'Musical', o: ['-a', '-o', '-e'], a: '-a', e: 'Adjetivos têm final -a.' }
     ]
   },
   'Trabalho': {
@@ -351,7 +462,13 @@ const THEME_CONTENT: Record<string, { intro: string, questions: {q: string, o: s
     questions: [
       { q: 'O que é um "Laboristo"?', o: ['Trabalhador', 'Escritório', 'Fábrica'], a: 'Trabalhador', e: 'Labor- (trabalho) + ist- (quem exerce).' },
       { q: 'Como se diz "Salário"?', o: ['Salajro', 'Mono', 'Prezo'], a: 'Salajro', e: 'Raiz internacional.' },
-      { q: 'O que é o "Estro"?', o: ['O Chefe', 'O Empregado', 'O Cliente'], a: 'O Chefe', e: 'Estro é o líder de qualquer organização.' }
+      { q: 'O que é o "Estro"?', o: ['O Chefe', 'O Empregado', 'O Cliente'], a: 'O Chefe', e: 'Estro é o líder de qualquer organização.' },
+      { q: 'Como se diz "Empresa"?', o: ['Firmao', 'Domo', 'Loko'], a: 'Firmao', e: 'Raiz para firma ou empresa.' },
+      { q: 'O que é um "Projekto"?', o: ['Projeto', 'Paredes', 'Janelas'], a: 'Projeto', e: 'Raiz internacional.' }
+    ],
+    combineQuestions: [
+      { c: 'Transforme "Ofico" (Ofício) no lugar "Escritório":', r: 'Ofic', m: 'Escritório', o: ['-ejo', '-ilo', '-ano'], a: '-ejo', e: 'Sufixo -ejo para lugares.' },
+      { c: 'De "Lerni" (Aprender) para "Escola":', r: 'Lern', m: 'Escola (local)', o: ['-ejo', '-aro', '-isto'], a: '-ejo', e: 'Lugar de aprender = Escola.' }
     ]
   },
   'Sentimentos': {
@@ -359,7 +476,13 @@ const THEME_CONTENT: Record<string, { intro: string, questions: {q: string, o: s
     questions: [
       { q: 'Como se diz "Infeliz"?', o: ['Malfeliĉa', 'Ne-feliĉa', 'Trista'], a: 'Malfeliĉa', e: 'Prefixo Mal- cria o oposto direto de Feliĉa.' },
       { q: 'O que é "Ami"?', o: ['Gostar', 'Amar', 'Odiar'], a: 'Amar', e: 'Raiz latina.' },
-      { q: 'O que significa "Ĝojo"?', o: ['Raiva', 'Alegria', 'Medo'], a: 'Alegria', e: 'Ĝoji é estar alegre.' }
+      { q: 'O que significa "Ĝojo"?', o: ['Raiva', 'Alegria', 'Medo'], a: 'Alegria', e: 'Ĝoji é estar alegre.' },
+      { q: 'Como se diz "Espero"?', o: ['Medo', 'Esperança', 'Dúvida'], a: 'Esperança', e: 'Raiz da palavra Esperanto.' },
+      { q: 'O que significa "Tristo"?', o: ['Tristeza', 'Raiva', 'Sono'], a: 'Tristeza', e: 'Vem do adjetivo Trista.' }
+    ],
+    combineQuestions: [
+      { c: 'Transforme "Ami" (Amar) no adjetivo "Amável":', r: 'Am', m: 'Amável', o: ['-o', '-a', '-e'], a: '-a', e: 'Adjetivos terminam em -a.' },
+      { c: 'O oposto de "Amo":', r: 'Amo', m: 'Ódio', o: ['Mal-', 'Ge-', 'Bo-'], a: 'Mal-', e: 'Mal- inverte o sentimento.' }
     ]
   },
   'Comunicações': {
@@ -367,7 +490,13 @@ const THEME_CONTENT: Record<string, { intro: string, questions: {q: string, o: s
     questions: [
       { q: 'Como se diz "Escrever"?', o: ['Skribi', 'Legi', 'Diri'], a: 'Skribi', e: 'Raiz latina.' },
       { q: 'O que é "Lingvo"?', o: ['Língua/Idioma', 'Palavra', 'Som'], a: 'Língua/Idioma', e: 'Vem do latim "lingua".' },
-      { q: 'O que significa "Diri"?', o: ['Falar', 'Dizer', 'Ouvir'], a: 'Dizer', e: 'Diri é dizer algo específico. Paroli é o ato de falar.' }
+      { q: 'O que significa "Diri"?', o: ['Falar', 'Dizer', 'Ouvir'], a: 'Dizer', e: 'Diri é dizer algo específico. Paroli é o ato de falar.' },
+      { q: 'Como se diz "Telefone"?', o: ['Telefono', 'Poŝto', 'Radio'], a: 'Telefono', e: 'Raiz internacional.' },
+      { q: 'O que é "Konversacio"?', o: ['Conversa', 'Disputa', 'Grito'], a: 'Conversa', e: 'Raiz internacional.' }
+    ],
+    combineQuestions: [
+      { c: 'Transforme "Paroli" (Falar) no indivíduo que "Fala" (Falante):', r: 'Parol', m: 'Falante', o: ['-anto', '-ilo', '-ejo'], a: '-anto', e: 'Sufixo -ant- para participante ativo.' },
+      { c: 'Como dizer "Linguístico" em relação a "Lingvo"?', r: 'Lingv', m: 'Linguístico', o: ['-a', '-o', '-e'], a: '-a', e: 'Adjetivo sobre língua.' }
     ]
   },
   'Compras': {
@@ -375,43 +504,69 @@ const THEME_CONTENT: Record<string, { intro: string, questions: {q: string, o: s
     questions: [
       { q: 'Qual o nome do "Preço"?', o: ['Prezo', 'Kosto', 'Valoro'], a: 'Prezo', e: 'Raiz internacional.' },
       { q: 'O que é a "Monujo"?', o: ['Moeda', 'Carteira', 'Banco'], a: 'Carteira', e: 'Mon- (dinheiro) + uj- (recipiente) + o (coisa).' },
-      { q: 'Como se diz "Barato"?', o: ['Libera', 'Malmultekosta', 'Malalta'], a: 'Malmultekosta', e: 'Literalmente "Mal" (oposto) "multe" (muito) "kosta" (caro).' }
+      { q: 'Como se diz "Barato"?', o: ['Libera', 'Malmultekosta', 'Malalta'], a: 'Malmultekosta', e: 'Literalmente "Mal" (oposto) "multe" (muito) "kosta" (caro).' },
+      { q: 'O que é "Butikisto"?', o: ['Vendedor/Lojista', 'Cliente', 'Prateleira'], a: 'Vendedor/Lojista', e: 'Butiko (loja) + isto (profissional).' },
+      { q: 'Como se diz "Caro"?', o: ['Kosta', 'Libera', 'Granda'], a: 'Kosta', e: 'Vem de custo/kosto.' }
+    ],
+    combineQuestions: [
+      { c: 'Transforme "Aĉeti" (Comprar) em "Compra":', r: 'Aĉet', m: 'Compra (substantivo)', o: ['-as', '-o', '-is'], a: '-o', e: 'Substantivos terminam em -o.' },
+      { c: 'Oposto de "Aĉeti" (Comprar):', r: 'Vendi', m: 'Vender', o: ['Vendi', 'Doni', 'Peti'], a: 'Vendi', e: 'Vendi é o oposto de Aĉeti.' }
     ]
   }
 };
 
-const GENERATED_LESSONS: Lesson[] = Array.from({ length: 92 }, (_, i) => {
-  const idNum = i + 9;
+const GENERATED_LESSONS: Lesson[] = Array.from({ length: 90 }, (_, i) => {
+  const idNum = i + 11;
   const theme = THEMES[i % THEMES.length];
   const content = THEME_CONTENT[theme.name] || { 
     intro: `Nesta unidade exploraremos o vocabulário de ${theme.name.toLowerCase()}. O Esperanto preza pela clareza e termos internacionais.`,
-    questions: [{ q: `Qual o foco de ${theme.name}?`, o: [theme.name, 'Gramática pura', 'Nada'], a: theme.name, e: 'Foco na imersão temática.' }]
+    questions: [{ q: `Qual o foco de ${theme.name}?`, o: [theme.name, 'Gramática pura', 'Nada'], a: theme.name, e: 'Foco na imersão temática.' }],
+    combineQuestions: []
   };
   const termIdx = Math.floor(i / THEMES.length) % theme.terms.length;
   const term = theme.terms[termIdx];
   const nextTerm = theme.terms[(termIdx + 1) % theme.terms.length];
-  const question = content.questions[i % content.questions.length];
   
+  const lessonParts: LessonPart[] = [
+    { type: 'icon', content: `Imersão em ${theme.name}`, iconName: theme.icon },
+    { type: 'text', content: content.intro },
+    { type: 'text', content: `No dia a dia de ${theme.name.toLowerCase()}, essas palavras são essenciais:` },
+    { type: 'example', content: `Termo 1: "${term}" - muito usado em conversas sobre o assunto.` },
+    { type: 'example', content: `Termo 2: "${nextTerm}" - amplia seu entendimento situcional.` }
+  ];
+
+  // Include some combine exercises if available
+  if (content.combineQuestions.length > 0) {
+    const combine = content.combineQuestions[i % content.combineQuestions.length];
+    lessonParts.push({
+      type: 'combine',
+      content: combine.c,
+      root: combine.r,
+      targetMeaning: combine.m,
+      options: combine.o,
+      correctAnswer: combine.a,
+      explanation: combine.e
+    });
+  }
+
+  // Include ALL available questions for the theme to make lessons richer
+  content.questions.forEach((q) => {
+    lessonParts.push({
+      type: 'question',
+      content: q.q,
+      options: q.o,
+      correctAnswer: q.a,
+      explanation: q.e
+    });
+  });
+
+  lessonParts.push({ type: 'text', content: 'Continue consolidando seu aprendizado. Cada passo é uma vitória na sua jornada rumo ao bilinguismo!' });
+
   return {
     id: `l${idNum}`,
     title: `${theme.name}: Módulo ${Math.floor(i / THEMES.length) + 1}`,
-    description: `Lição ${idNum}: Domine termos como "${term}" e "${nextTerm}" no contexto de ${theme.name.toLowerCase()}.`,
-    parts: [
-      { type: 'icon', content: `Domínio de ${theme.name}`, iconName: theme.icon },
-      { type: 'text', content: content.intro },
-      { type: 'text', content: `No contexto de ${theme.name.toLowerCase()}, aprenderemos palavras essenciais para a comunicação diária.` },
-      { type: 'example', content: `Palavra-chave 1: "${term}" é fundamental para expressar conceitos neste tema.` },
-      { type: 'example', content: `Palavra-chave 2: "${nextTerm}" complementa o sentido de frases sobre ${theme.name.toLowerCase()}.` },
-      { type: 'text', content: 'Tente associar essas palavras com imagens mentais para facilitar a memorização.' },
-      {
-        type: 'question',
-        content: question.q,
-        options: question.o,
-        correctAnswer: question.a,
-        explanation: question.e
-      },
-      { type: 'text', content: 'Continue praticando para alcançar a fluência! Cada palavra conta.' }
-    ]
+    description: `Lição ${idNum}: Vocabulário aplicado de ${theme.name.toLowerCase()} (${term} e ${nextTerm}).`,
+    parts: lessonParts
   };
 });
 
@@ -428,6 +583,8 @@ const ADVANCED_LESSONS: Lesson[] = [
       { type: 'text', content: 'E 9 finais: -O (coisa), -A (qualidade), -E (lugar), -AM (tempo), -EL (modo), -AL (razão), -OM (quantidade), -ES (posse), -U (indivíduo).' },
       { type: 'example', content: 'KI (pergunta) + O (coisa) = KIO (O quê). TI (ponto) + E (lugar) = TIE (Lá/Ali).' },
       { type: 'question', content: 'Como se diz "Sempre" (Tudo + Tempo) em Esperanto?', options: ['Ĉiam', 'Ĉio', 'Tiam'], correctAnswer: 'Ĉiam', explanation: 'Ĉi- (todo) + -am (tempo) = Ĉiam.' },
+      { type: 'question', content: 'Como se diz "Em lugar nenhum"?', options: ['Nenie', 'Ie', 'Ĉie'], correctAnswer: 'Nenie', explanation: 'Neni- (nada) + -e (lugar) = Nenie.' },
+      { type: 'combine', content: 'Crie "Alguém" (Algum + Indivíduo):', root: 'i', targetMeaning: 'Alguém', options: ['-u', '-o', '-a'], correctAnswer: '-u', explanation: '-u indica pessoa/indivíduo.' },
       { type: 'text', content: 'Dominar essa tabela permite que você expresse quase qualquer relação lógica sem precisar decorar palavras isoladas.' }
     ]
   },
@@ -441,7 +598,8 @@ const ADVANCED_LESSONS: Lesson[] = [
       { type: 'example', content: '"Kolo" (Pescoço) -> "Kolumo" (Colarinho). "Butono" (Botão) -> "Butonumi" (Abotoar).' },
       { type: 'text', content: 'Ele é usado quando nenhum outro sufixo se encaixa perfeitamente na lógica técnica.' },
       { type: 'example', content: '"Plena" (Cheio) -> "Plenumi" (Cumprir/Realizar).' },
-      { type: 'question', content: 'O que significa "Krucumi"? (Kruco = Cruz)', options: ['Crucificar', 'Fazer uma cruz', 'Comprar uma cruz'], correctAnswer: 'Crucificar', explanation: 'Kruco (Cruz) + um (relação indefinida/vaga/especial) + i (verbo) = Crucificar.' }
+      { type: 'question', content: 'O que significa "Krucumi"? (Kruco = Cruz)', options: ['Crucificar', 'Fazer uma cruz', 'Comprar uma cruz'], correctAnswer: 'Crucificar', explanation: 'Kruco (Cruz) + um (relação indefinida/vaga/especial) + i (verbo) = Crucificar.' },
+      { type: 'question', content: 'O que é um "Kolumo"? (Kolo = Pescoço)', options: ['Colar', 'Colarinho', 'Gravata'], correctAnswer: 'Colarinho', explanation: 'Kolo (pescoço) + um (peça relacionada) = colarinho.' }
     ]
   },
   {
@@ -454,7 +612,8 @@ const ADVANCED_LESSONS: Lesson[] = [
       { type: 'icon', content: 'Idealismo', iconName: 'globe' },
       { type: 'text', content: 'Zamenhof criou a língua para derrubar barreiras linguísticas que geravam desconfiança entre os povos.' },
       { type: 'example', content: '"Ni fosu la teron, por ke la popoloj povu nin kompreni" (Cavemos o chão, para que os povos possam nos entender).' },
-      { type: 'text', content: 'Hoje, a cultura esperantista inclui festivais (UK - Universala Kongreso), música, literatura original e uma rede mundial de hospitalidade.' }
+      { type: 'text', content: 'Hoje, a cultura esperantista inclui festivais (UK - Universala Kongreso), música, literatura original e uma rede mundial de hospitalidade.' },
+      { type: 'question', content: 'Qual o principal objetivo de Zamenhof ao criar o Esperanto?', options: ['Lucrar com livros', 'Facilitar a paz e compreensão mundial', 'Substituir o latim na igreja'], correctAnswer: 'Facilitar a paz e compreensão mundial', explanation: 'A "Interna Ideo" foca na fraternidade humana.' }
     ]
   },
   {
@@ -468,7 +627,8 @@ const ADVANCED_LESSONS: Lesson[] = [
       { type: 'icon', content: 'Arte Literal', iconName: 'music' },
       { type: 'text', content: 'Existem milhares de livros originais em Esperanto, não apenas traduções. Autores como Julio Baghy e William Auld elevaram o status da língua à literatura de alto nível.' },
       { type: 'example', content: '"Ho, mia kor\', ne batu maltrankvile" - Famosos versos de Zamenhof sobre a ansiedade de criar a língua.' },
-      { type: 'question', content: 'Por que o Esperanto é bom para poesia?', options: ['Ordem flexível e sufixos regulares', 'Tem poucas palavras', 'É uma língua antiga'], correctAnswer: 'Ordem flexível e sufixos regulares', explanation: 'A flexibilidade gramatical permite métricas e rimas muito criativas.' }
+      { type: 'question', content: 'Por que o Esperanto é bom para poesia?', options: ['Ordem flexível e sufixos regulares', 'Tem poucas palavras', 'É uma língua antiga'], correctAnswer: 'Ordem flexível e sufixos regulares', explanation: 'A flexibilidade gramatical permite métricas e rimas muito criativas.' },
+      { type: 'question', content: 'O que o acusativo (-n) permite em termos de estilo?', options: ['Rimar melhor', 'Mudar a ordem das palavras sem mudar o sentido', 'Falar mais rápido'], correctAnswer: 'Mudar a ordem das palavras sem mudar o sentido', explanation: 'O -n marca o objeto, permitindo ordens como OVS ou VOS mantendo a clareza.' }
     ]
   }
 ];
@@ -618,7 +778,24 @@ export function Lessons({
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
   const [focusedOptionIndex, setFocusedOptionIndex] = useState<number>(-1);
+  const [isLessonFinished, setIsLessonFinished] = useState(false);
   const lessonContainerRef = useRef<HTMLDivElement>(null);
+
+  // Suggested Next Lesson Logic
+  const suggestedNextLesson = useMemo(() => {
+    if (!selectedLesson) return null;
+    const currentIndex = SAMPLE_LESSONS.findIndex(l => l.id === selectedLesson.id);
+    if (currentIndex === -1) return null;
+    
+    // Try to find the next lesson of the same difficulty
+    const sameLevelNext = SAMPLE_LESSONS.slice(currentIndex + 1).find(l => l.difficulty === selectedLesson.difficulty);
+    if (sameLevelNext) return sameLevelNext;
+    
+    // Fallback: next sequential lesson in the entire list
+    if (currentIndex < SAMPLE_LESSONS.length - 1) return SAMPLE_LESSONS[currentIndex + 1];
+    
+    return null;
+  }, [selectedLesson?.id]);
 
   // Grammar Quiz State
   const [isQuizMode, setIsQuizMode] = useState(false);
@@ -826,8 +1003,7 @@ export function Lessons({
       setIsCorrect(null);
     } else {
       onComplete(selectedLesson.id);
-      setSelectedLesson(null);
-      setCurrentPartIndex(0);
+      setIsLessonFinished(true);
     }
   };
 
@@ -1169,6 +1345,82 @@ export function Lessons({
     const part = selectedLesson.parts[currentPartIndex];
     const progress = ((currentPartIndex + 1) / selectedLesson.parts.length) * 100;
 
+    if (isLessonFinished) {
+      return (
+        <div ref={lessonContainerRef} className="max-w-4xl mx-auto px-6 py-12">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bento-card overflow-hidden"
+          >
+            <div className="p-10 md:p-20 text-center">
+              <motion.div 
+                animate={{ 
+                  scale: [1, 1.1, 1],
+                  rotate: [0, 5, -5, 0]
+                }}
+                transition={{ duration: 2, repeat: Infinity }}
+                className="w-24 h-24 bg-emerald-100 text-emerald-600 rounded-3xl flex items-center justify-center mx-auto mb-8 shadow-xl"
+              >
+                <Trophy size={48} />
+              </motion.div>
+              
+              <h2 className="text-5xl font-black text-slate-900 mb-4">Gratulon!</h2>
+              <p className="text-xl text-slate-500 mb-10 font-medium">
+                Você completou a lição: <span className="text-emerald-600 font-bold">{selectedLesson.title}</span>
+              </p>
+
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+                {suggestedNextLesson ? (
+                  <button
+                    onClick={() => {
+                      setSelectedLesson(suggestedNextLesson);
+                      setIsLessonFinished(false);
+                      setCurrentPartIndex(0);
+                      setMaxVisitedIndex(0);
+                      setSelectedOption(null);
+                      setIsCorrect(null);
+                      setFocusedOptionIndex(-1);
+                      if (suggestedNextLesson.difficulty !== selectedLevel) {
+                        setSelectedLevel(suggestedNextLesson.difficulty as any);
+                      }
+                    }}
+                    className="w-full sm:w-auto px-10 py-5 bg-emerald-600 text-white rounded-2xl font-black hover:bg-emerald-700 transition-all shadow-xl shadow-emerald-600/20 flex items-center justify-center gap-3 active:scale-95"
+                  >
+                    <span>Próxima Lição</span>
+                    <ChevronRight size={24} />
+                  </button>
+                ) : (
+                  <p className="text-emerald-600 font-black mb-4">Parabéns! Você completou todas as lições deste nível!</p>
+                )}
+                
+                <button
+                  onClick={() => {
+                    setSelectedLesson(null);
+                    setIsLessonFinished(false);
+                    setCurrentPartIndex(0);
+                    setMaxVisitedIndex(0);
+                  }}
+                  className="w-full sm:w-auto px-10 py-5 bg-slate-100 text-slate-600 rounded-2xl font-bold hover:bg-slate-200 transition-colors flex items-center justify-center gap-2"
+                >
+                  <Book size={20} />
+                  <span>Ver todas as lições</span>
+                </button>
+              </div>
+              
+              {suggestedNextLesson && (
+                <div className="mt-12 p-6 bg-slate-50 rounded-3xl border border-slate-100 max-w-sm mx-auto">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3">Sugestão automática</p>
+                  <h4 className="font-bold text-slate-900 mb-1">{suggestedNextLesson.title}</h4>
+                  <p className="text-xs text-slate-500 line-clamp-1">{suggestedNextLesson.description}</p>
+                </div>
+              )}
+            </div>
+          </motion.div>
+        </div>
+      );
+    }
+
     return (
       <div ref={lessonContainerRef} className="max-w-4xl mx-auto px-6 py-12">
         <div className="flex items-center justify-between mb-8">
@@ -1420,6 +1672,34 @@ export function Lessons({
                   </motion.div>
                 )}
 
+                {selectedLesson.id === 'l1' && currentPartIndex === selectedLesson.parts.length - 1 && (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="flex justify-center pt-4"
+                  >
+                    <button
+                      onClick={() => {
+                        const shareUrl = `https://esperanto.app/lessons?id=l1`;
+                        if (navigator.share) {
+                          navigator.share({
+                            title: 'Esperanto Lernu - Lição 1',
+                            text: 'Estou aprendendo Esperanto! Veja esta lição:',
+                            url: shareUrl,
+                          }).catch(console.error);
+                        } else {
+                          navigator.clipboard.writeText(shareUrl);
+                          alert('Link da lição copiado para a área de transferência!');
+                        }
+                      }}
+                      className="flex items-center gap-2 px-6 py-3 bg-white border-2 border-emerald-500 text-emerald-600 rounded-2xl font-bold hover:bg-emerald-50 transition-all shadow-sm"
+                    >
+                      <Share2 size={20} />
+                      Compartilhar Lição
+                    </button>
+                  </motion.div>
+                )}
+
                 <div className="pt-8 flex justify-end">
                   <button
                     disabled={(part.type === 'question' || part.type === 'combine') && !isCorrect}
@@ -1640,6 +1920,7 @@ export function Lessons({
                     setSelectedLesson(lesson);
                     setCurrentPartIndex(0);
                     setMaxVisitedIndex(0);
+                    setIsLessonFinished(false);
                   }}
                   className="cursor-pointer"
                 >

@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { ExternalLink, Video, Book, Users, Search, Play, Globe, LayoutGrid, List } from 'lucide-react';
+import { ExternalLink, Video, Book, Users, Search, Play, Globe, LayoutGrid, List, Plus } from 'lucide-react';
 import { ResourceItem } from '../types';
 import { DICTIONARY } from '../data/dictionary';
 
@@ -49,7 +49,12 @@ const RESOURCES: ResourceItem[] = [
   }
 ];
 
-export function LibrarySection() {
+interface LibrarySectionProps {
+  onAddFlashcard: (front: string, back: string, category?: string) => void;
+  onNavigate: (tab: 'home' | 'lessons' | 'library' | 'dashboard', content?: 'lessons' | 'flashcards') => void;
+}
+
+export function LibrarySection({ onAddFlashcard, onNavigate }: LibrarySectionProps) {
   const [view, setView] = useState<'resources' | 'glossary'>('resources');
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -58,9 +63,21 @@ export function LibrarySection() {
     const lower = searchTerm.toLowerCase();
     return DICTIONARY.filter(e => 
       e.word.toLowerCase().includes(lower) || 
-      e.translation.toLowerCase().includes(lower)
+      e.translation.toLowerCase().includes(lower) ||
+      (e.category && e.category.toLowerCase().includes(lower))
     );
   }, [searchTerm]);
+
+  const handleAddAllToFlashcards = () => {
+    if (filteredGlossary.length === 0) return;
+    
+    filteredGlossary.forEach(entry => {
+      onAddFlashcard(entry.word, entry.translation, entry.category);
+    });
+    
+    // Switch to flashcards view
+    onNavigate('lessons', 'flashcards');
+  };
 
   const getIcon = (type: string) => {
     switch (type) {
@@ -145,15 +162,26 @@ export function LibrarySection() {
         </div>
       ) : (
         <div className="space-y-8">
-          <div className="relative max-w-xl">
-            <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
-            <input 
-              type="text" 
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Buscar no glossário..."
-              className="w-full pl-16 pr-6 py-4 bg-white border border-slate-200 rounded-[24px] outline-none focus:border-emerald-500 transition-all shadow-sm font-bold"
-            />
+          <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
+            <div className="relative w-full max-w-xl">
+              <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
+              <input 
+                type="text" 
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Buscar no glossário..."
+                className="w-full pl-16 pr-6 py-4 bg-white border border-slate-200 rounded-[24px] outline-none focus:border-emerald-500 transition-all shadow-sm font-bold"
+              />
+            </div>
+            {filteredGlossary.length > 0 && (
+              <button
+                onClick={handleAddAllToFlashcards}
+                className="flex items-center gap-2 px-6 py-4 bg-emerald-600 text-white rounded-[24px] font-bold hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-600/20 whitespace-nowrap"
+              >
+                <Plus size={20} />
+                Estudar Estes {filteredGlossary.length}
+              </button>
+            )}
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -166,14 +194,21 @@ export function LibrarySection() {
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.9 }}
                   transition={{ delay: idx * 0.05 }}
-                  className="bento-card p-8 bg-white border border-slate-100 hover:border-emerald-500 transition-all group"
+                  className="bento-card p-8 bg-white border border-slate-100 hover:border-emerald-500 transition-all group flex flex-col h-full"
                 >
                   <div className="flex justify-between items-start mb-4">
                     <span className="bento-label text-emerald-600 group-hover:text-emerald-700">{entry.category}</span>
+                    <button
+                      onClick={() => onAddFlashcard(entry.word, entry.translation, entry.category)}
+                      className="p-2 bg-slate-50 text-slate-400 hover:bg-emerald-50 hover:text-emerald-600 rounded-xl transition-all opacity-0 group-hover:opacity-100"
+                      title="Adicionar aos meus Flashcards"
+                    >
+                      <Plus size={18} />
+                    </button>
                   </div>
                   <h3 className="text-3xl font-bold text-slate-900 mb-2">{entry.word}</h3>
                   <p className="text-slate-500 font-bold mb-6">{entry.translation}</p>
-                  <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                  <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 flex-grow">
                     <p className="text-sm italic text-slate-600 mb-2">"{entry.example}"</p>
                     <p className="text-xs text-slate-400 font-medium">{entry.exampleTranslation}</p>
                   </div>
