@@ -299,10 +299,10 @@ export default function App() {
   ];
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-50 font-sans pb-32 md:pb-0 overflow-x-hidden">
+    <div className="min-h-screen flex flex-col bg-slate-50 font-sans pb-32 md:pb-0 overflow-x-hidden relative">
       {/* Navigation */}
-      <nav className="sticky top-0 z-50 bg-white/70 backdrop-blur-xl border-b border-slate-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-8">
+      <nav className="sticky top-0 z-50 bg-white/70 backdrop-blur-xl border-b border-slate-200 w-full">
+        <div className="max-w-7xl mx-auto px-4 md:px-8">
           <div className="flex justify-between h-16 md:h-20 items-center">
             <div 
               className="flex items-center space-x-2 md:space-x-3 cursor-pointer group"
@@ -457,7 +457,7 @@ export default function App() {
       </div>
 
       {/* Main Content */}
-      <main className="flex-grow">
+      <main className="flex-grow overflow-x-hidden w-full relative">
         <AnimatePresence mode="wait">
           <motion.div
             key={activeTab}
@@ -608,12 +608,12 @@ export default function App() {
             </div>
           </div>
           
-          <div className="pt-10 border-t border-slate-900 flex flex-col md:flex-row justify-between items-center gap-6 text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">
-            <div className="flex items-center gap-2">
+          <div className="pt-10 border-t border-slate-900 flex flex-col md:flex-row justify-between items-center gap-6 text-[10px] font-black uppercase tracking-[0.1em] md:tracking-[0.2em] text-slate-500">
+            <div className="flex flex-wrap items-center justify-center gap-2">
               <span className="bg-emerald-500/10 text-emerald-500 px-2 py-1 rounded">V2.4</span>
               <span>© 2026 Esperanto Lernu Foundation</span>
             </div>
-            <div className="text-emerald-500 hover:text-emerald-400 transition-colors italic normal-case text-sm font-medium tracking-normal">
+            <div className="text-emerald-500 hover:text-emerald-400 transition-colors italic normal-case text-sm font-medium tracking-normal text-center">
               Jen la lingvo, kiun mi amas.
             </div>
           </div>

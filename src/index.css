@@ -12,7 +12,10 @@
 @layer base {
   body {
     @apply bg-slate-50 text-slate-800 font-sans;
+    width: 100%;
+    max-width: 100vw;
     overflow-x: hidden;
+    position: relative;
   }
 
   h1, h2, h3, h4 {

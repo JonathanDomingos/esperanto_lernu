@@ -23,14 +23,14 @@ export function Hero({ onStart, onNavigate, stats }: HeroProps) {
   }, []);
 
   return (
-    <div className="max-w-7xl mx-auto px-6 sm:px-8 py-10 space-y-10">
+    <div className="max-w-7xl mx-auto px-4 sm:px-8 py-10 space-y-10 overflow-x-hidden">
       {/* Welcome Message */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-        <div>
+        <div className="max-w-full overflow-hidden">
           <motion.h1 
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
-            className="text-4xl md:text-5xl font-black text-slate-900 tracking-tighter"
+            className="text-3xl md:text-5xl font-black text-slate-900 tracking-tighter truncate md:whitespace-normal"
           >
             Bonvenon al la <span className="text-emerald-600 italic">Hubo</span>
           </motion.h1>
@@ -270,7 +270,7 @@ export function Hero({ onStart, onNavigate, stats }: HeroProps) {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.7 }}
-          className="md:col-span-4 bg-white border border-slate-100 rounded-[40px] p-10 flex flex-col gap-10 overflow-hidden shadow-sm"
+          className="md:col-span-4 bg-white border border-slate-100 rounded-[40px] p-6 md:p-10 flex flex-col gap-10 overflow-hidden shadow-sm"
         >
           <div className="w-full text-center md:text-left">
             <div className="flex items-center gap-3 mb-6 justify-center md:justify-start">
