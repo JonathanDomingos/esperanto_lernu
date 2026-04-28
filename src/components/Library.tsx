@@ -1,6 +1,30 @@
 import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { ExternalLink, Video, Book, Users, Search, Play, Globe, LayoutGrid, List, Plus } from 'lucide-react';
+import { 
+  ExternalLink, 
+  Video, 
+  Book, 
+  Users, 
+  Search, 
+  Play, 
+  Globe, 
+  LayoutGrid, 
+  List, 
+  Plus,
+  MessageSquare,
+  User,
+  Hash,
+  Activity,
+  Leaf,
+  Home,
+  PawPrint,
+  Sparkles,
+  Clock,
+  Link2,
+  HelpCircle,
+  Map,
+  Utensils
+} from 'lucide-react';
 import { ResourceItem } from '../types';
 import { DICTIONARY } from '../data/dictionary';
 import Fuse from 'fuse.js';
@@ -22,11 +46,11 @@ const RESOURCES: (ResourceItem & { featured?: boolean })[] = [
     icon: 'Play'
   },
   {
-    title: 'Esperanto Variety Show',
-    description: 'Canal de YouTube com lições práticas, música e curiosidades sobre a cultura esperantista.',
-    url: 'https://www.youtube.com/user/EsperantoVarietyShow',
-    category: 'Video',
-    icon: 'Video',
+    title: 'Ceará Esperanto',
+    description: 'Página oficial da Associação de Esperanto do Ceará com notícias, eventos e materiais de estudo.',
+    url: 'https://www.facebook.com/CearaEsperanto/',
+    category: 'Community',
+    icon: 'Users',
     featured: true
   },
   {
@@ -37,11 +61,11 @@ const RESOURCES: (ResourceItem & { featured?: boolean })[] = [
     icon: 'Search'
   },
   {
-    title: 'Tujvortaro',
-    description: 'Dicionário ultra-rápido e simples de Esperanto. Ideal para buscas instantâneas durante o estudo.',
-    url: 'https://tujvortaro.net',
-    category: 'Dictionary',
-    icon: 'Search'
+    title: 'TEJO',
+    description: 'Tutmonda Esperantista Junulara Organizo. A maior organização mundial de jovens que falam Esperanto.',
+    url: 'https://www.tejo.org/',
+    category: 'Community',
+    icon: 'Users'
   },
   {
     title: 'Esperanto Brasil',
@@ -174,6 +198,7 @@ interface LibrarySectionProps {
 export function LibrarySection({ onAddFlashcard, onNavigate }: LibrarySectionProps) {
   const [view, setView] = useState<'resources' | 'glossary'>('resources');
   const [searchTerm, setSearchTerm] = useState('');
+  const [addedWords, setAddedWords] = useState<Set<string>>(new Set());
 
   const fuse = useMemo(() => new Fuse(DICTIONARY, {
     keys: ['word', 'translation', 'category'],
@@ -188,15 +213,40 @@ export function LibrarySection({ onAddFlashcard, onNavigate }: LibrarySectionPro
     return fuse.search(searchTerm).map(result => result.item);
   }, [searchTerm, fuse]);
 
+  const handleAddSingleFlashcard = (word: string, translation: string, category?: string) => {
+    onAddFlashcard(word, translation, category);
+    setAddedWords(prev => new Set(prev).add(word));
+  };
+
   const handleAddAllToFlashcards = () => {
     if (filteredGlossary.length === 0) return;
     
     filteredGlossary.forEach(entry => {
       onAddFlashcard(entry.word, entry.translation, entry.category);
+      setAddedWords(prev => new Set(prev).add(entry.word));
     });
     
     // Switch to flashcards view
     onNavigate('lessons', 'flashcards');
+  };
+
+  const getCategoryIcon = (category: string) => {
+    switch (category) {
+      case 'Saudações': return <MessageSquare size={12} />;
+      case 'Pronomes': return <User size={12} />;
+      case 'Números': return <Hash size={12} />;
+      case 'Verbos': return <Activity size={12} />;
+      case 'Natureza': return <Leaf size={12} />;
+      case 'Cotidiano': return <Home size={12} />;
+      case 'Animais': return <PawPrint size={12} />;
+      case 'Adjetivos': return <Sparkles size={12} />;
+      case 'Tempo': return <Clock size={12} />;
+      case 'Conectivos': return <Link2 size={12} />;
+      case 'Questionamentos': return <HelpCircle size={12} />;
+      case 'Viagem': return <Map size={12} />;
+      case 'Culinária': return <Utensils size={12} />;
+      default: return <Book size={12} />;
+    }
   };
 
   return (
@@ -234,7 +284,7 @@ export function LibrarySection({ onAddFlashcard, onNavigate }: LibrarySectionPro
         </div>
       ) : (
         <div className="space-y-8">
-          <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
+          <div className="sticky top-24 z-30 bg-white/80 backdrop-blur-md py-4 -mx-6 px-6 mb-8 border-b border-slate-100 flex flex-col md:flex-row gap-4 items-center justify-between transition-all duration-300">
             <div className="relative w-full max-w-xl">
               <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
               <input 
@@ -242,13 +292,13 @@ export function LibrarySection({ onAddFlashcard, onNavigate }: LibrarySectionPro
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 placeholder="Buscar no glossário..."
-                className="w-full pl-16 pr-6 py-4 bg-white border border-slate-200 rounded-[24px] outline-none focus:border-emerald-500 transition-all shadow-sm font-bold"
+                className="w-full pl-16 pr-6 py-4 bg-slate-50 border border-slate-200 rounded-[24px] outline-none focus:border-emerald-500 focus:bg-white transition-all shadow-sm font-bold"
               />
             </div>
             {filteredGlossary.length > 0 && (
               <button
                 onClick={handleAddAllToFlashcards}
-                className="flex items-center gap-2 px-6 py-4 bg-emerald-600 text-white rounded-[24px] font-bold hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-600/20 whitespace-nowrap"
+                className="flex items-center gap-2 px-6 py-4 bg-emerald-600 text-white rounded-[24px] font-bold hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-600/20 whitespace-nowrap active:scale-95"
               >
                 <Plus size={20} />
                 Estudar Estes {filteredGlossary.length}
@@ -256,36 +306,73 @@ export function LibrarySection({ onAddFlashcard, onNavigate }: LibrarySectionPro
             )}
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 scroll-smooth">
             <AnimatePresence mode="popLayout">
-              {filteredGlossary.map((entry, idx) => (
-                <motion.div 
-                  key={entry.word}
-                  layout
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.9 }}
-                  transition={{ delay: idx * 0.05 }}
-                  className="bento-card p-8 bg-white border border-slate-100 hover:border-emerald-500 transition-all group flex flex-col h-full"
-                >
-                  <div className="flex justify-between items-start mb-4">
-                    <span className="bento-label text-emerald-600 group-hover:text-emerald-700">{entry.category}</span>
-                    <button
-                      onClick={() => onAddFlashcard(entry.word, entry.translation, entry.category)}
-                      className="p-2 bg-slate-50 text-slate-400 hover:bg-emerald-50 hover:text-emerald-600 rounded-xl transition-all opacity-0 group-hover:opacity-100"
-                      title="Adicionar aos meus Flashcards"
-                    >
-                      <Plus size={18} />
-                    </button>
-                  </div>
-                  <h3 className="text-3xl font-bold text-slate-900 mb-2">{entry.word}</h3>
-                  <p className="text-slate-500 font-bold mb-6">{entry.translation}</p>
-                  <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 flex-grow">
-                    <p className="text-sm italic text-slate-600 mb-2">"{entry.example}"</p>
-                    <p className="text-xs text-slate-400 font-medium">{entry.exampleTranslation}</p>
-                  </div>
-                </motion.div>
-              ))}
+              {filteredGlossary.map((entry, idx) => {
+                const isAdded = addedWords.has(entry.word);
+                return (
+                  <motion.div 
+                    key={entry.word}
+                    layout
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                    whileHover={{ y: -5, shadow: '0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)' }}
+                    transition={{ delay: idx * 0.05 }}
+                    className={`bento-card p-8 bg-white border transition-all group flex flex-col h-full ${
+                      isAdded ? 'border-emerald-500 bg-emerald-50/10' : 'border-slate-100'
+                    }`}
+                  >
+                    <div className="flex justify-between items-start mb-6">
+                      <span className={`text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5 px-3 py-1.5 rounded-full transition-colors ${
+                        isAdded ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500 group-hover:bg-emerald-50 group-hover:text-emerald-600'
+                      }`}>
+                        {getCategoryIcon(entry.category)}
+                        {entry.category}
+                      </span>
+                      <button
+                        onClick={() => handleAddSingleFlashcard(entry.word, entry.translation, entry.category)}
+                        disabled={isAdded}
+                        className={`p-2.5 rounded-xl transition-all ${
+                          isAdded 
+                            ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20' 
+                            : 'bg-slate-50 text-slate-400 hover:bg-emerald-600 hover:text-white opacity-0 group-hover:opacity-100 hover:shadow-lg'
+                        }`}
+                        title={isAdded ? "Já está nos seus Flashcards" : "Adicionar aos meus Flashcards"}
+                      >
+                        {isAdded ? (
+                          <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }}>
+                            <Sparkles size={18} />
+                          </motion.div>
+                        ) : (
+                          <Plus size={18} />
+                        )}
+                      </button>
+                    </div>
+
+                    <div className="mb-8">
+                      <h3 className="text-4xl font-black text-slate-900 mb-2 leading-none">
+                        {entry.word}
+                      </h3>
+                      <p className="text-lg font-bold text-slate-400 group-hover:text-emerald-600 transition-colors">
+                        {entry.translation}
+                      </p>
+                    </div>
+
+                    <div className="p-5 bg-slate-50/50 rounded-[24px] border border-slate-100 mt-auto group-hover:bg-white group-hover:border-emerald-100 transition-all">
+                      <p className="text-sm italic text-slate-600 mb-2 leading-relaxed">
+                        "{entry.example}"
+                      </p>
+                      <div className="flex items-center gap-2">
+                        <div className="w-1.5 h-1.5 rounded-full bg-slate-300" />
+                        <p className="text-[11px] text-slate-400 font-bold uppercase tracking-wider">
+                          {entry.exampleTranslation}
+                        </p>
+                      </div>
+                    </div>
+                  </motion.div>
+                );
+              })}
             </AnimatePresence>
           </div>
         </div>

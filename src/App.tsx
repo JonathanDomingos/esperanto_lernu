@@ -30,6 +30,7 @@ import { Flashcards } from './components/Flashcards';
 import { Dashboard } from './components/Dashboard';
 import { DictionarySearch } from './components/DictionarySearch';
 import { NotificationCenter } from './components/NotificationCenter';
+import { Onboarding } from './components/Onboarding';
 import { Flashcard, SyncQueueItem, UserStats, Badge, AppNotification, NotificationSettings } from './types';
 
 const BADGES: Badge[] = [
@@ -333,6 +334,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-50 font-sans pb-32 md:pb-0 overflow-x-hidden relative">
+      <Onboarding onFinish={() => addNotification('Tudo pronto! ✨', 'Agora você conhece todas as seções. Bons estudos!', 'success')} />
       {/* Navigation */}
       <nav className="sticky top-0 z-50 bg-white/70 backdrop-blur-xl border-b border-slate-200 w-full">
         <div className="max-w-7xl mx-auto px-4 md:px-8">
