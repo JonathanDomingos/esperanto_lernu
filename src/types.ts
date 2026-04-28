@@ -34,6 +34,11 @@ export interface Flashcard {
   category?: string;
   imageUrl?: string;
   createdAt: number;
+  lastReview?: number;
+  nextReview?: number;
+  interval?: number;
+  easeFactor?: number;
+  reps?: number;
 }
 
 export interface Badge {
@@ -44,10 +49,21 @@ export interface Badge {
   unlockedAt?: number;
 }
 
+export interface DashboardSettings {
+  layout: 'grid' | 'list';
+  sections: {
+    progress: 'emerald' | 'blue' | 'violet' | 'rose';
+    achievements: 'emerald' | 'blue' | 'violet' | 'rose';
+    settings: 'emerald' | 'blue' | 'violet' | 'rose';
+    leaderboard: 'emerald' | 'blue' | 'violet' | 'rose';
+  };
+}
+
 export interface NotificationSettings {
   lessonReminders: boolean;
   newContentAlerts: boolean;
   soundEnabled: boolean;
+  dashboard: DashboardSettings;
 }
 
 export interface AppNotification {

@@ -29,7 +29,9 @@ import {
   Mic,
   Star,
   Trophy,
-  Share2
+  Share2,
+  Search,
+  X
 } from 'lucide-react';
 
 import { soundService } from '../services/soundService';
@@ -67,6 +69,7 @@ const GRAMMAR_HOTSPOTS: GrammarHotspot[] = [
   { term: '-a', explanation: 'Sufixo para Adjetivos (qualidades ou características).', examples: ['Bela (Belo)', 'Granda (Grande)', 'Feliĉa (Feliz)'] },
   { term: '-e', explanation: 'Sufixo para Advérbios (modo como algo acontece).', examples: ['Rapide (Rapidamente)', 'Bone (Bem)', 'Kune (Juntos)'] },
   { term: '-as', explanation: 'Terminação verbal para o Tempo Presente.', examples: ['Mi manĝas (Eu como)', 'Li lernas (Ele aprende)'] },
+  { term: 'amas', explanation: 'O verbo "Amar" no presente. A terminação -as indica que a ação acontece agora ou habitualmente.', examples: ['Mi amas vin (Eu te amo)'] },
   { term: '-is', explanation: 'Terminação verbal para o Tempo Passado.', examples: ['Mi manĝis (Eu comi)', 'Ili iris (Eles foram)'] },
   { term: '-os', explanation: 'Terminação verbal para o Tempo Futuro.', examples: ['Ni vojaĝos (Nós viajaremos)', 'Ŝi laboros (Ela trabalhará)'] },
   { term: '-us', explanation: 'Terminação verbal para o Condicional (faria, seria).', examples: ['Mi estus (Eu seria/fosse)', 'Vi amus (Você amaria)'] },
@@ -211,7 +214,7 @@ const MANUAL_LESSONS: Lesson[] = [
       { type: 'text', content: 'Verbos em português são complexos. Em Esperanto, eles são um alívio! Não existem conjugações por pessoa (eu, tu, ele...).' },
       { type: 'example', content: 'O infinitivo (forma base) termina em -i. "Lerni" (Aprender), "Manĝi" (Comer), "Labori" (Trabalhar).' },
       { type: 'text', content: 'Basta trocar o -i por uma das 3 terminações de tempo universal:' },
-      { type: 'example', content: 'Presente: -as. "Mi lernas" (Eu aprendo), "Ni lernas" (Nós aprendemos).' },
+      { type: 'example', content: 'Presente: -as. "Mi lernas" (Eu aprendo), "Mi amas vin" (Eu te amo).' },
       { type: 'combine', content: 'Como dizer "Eu como" (Presente)?', root: 'Mi manĝ', targetMeaning: 'Eu como', options: ['-as', '-is', '-os'], correctAnswer: '-as', explanation: '-as é a marca do presente.' },
       { type: 'example', content: 'Passado: -is. "Mi lernis" (Eu aprendi), "Ili lernis" (Eles aprenderam).' },
       { type: 'combine', content: 'Como dizer "Eu aprendi" (Passado)?', root: 'Mi lern', targetMeaning: 'Eu aprendi', options: ['-as', '-is', '-os'], correctAnswer: '-is', explanation: '-is é a marca do passado.' },
@@ -779,7 +782,32 @@ export function Lessons({
   const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
   const [focusedOptionIndex, setFocusedOptionIndex] = useState<number>(-1);
   const [isLessonFinished, setIsLessonFinished] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   const lessonContainerRef = useRef<HTMLDivElement>(null);
+
+  const handleShareLesson = (lesson: Lesson) => {
+    const shareUrl = `${window.location.origin}/lessons?id=${lesson.id}`;
+    const shareTitle = `Esperanto Lernu - ${lesson.title}`;
+    const shareText = `Estou aprendendo Esperanto no Esperanto Lernu! Veja esta lição: ${lesson.title}`;
+
+    if (navigator.share) {
+      navigator.share({
+        title: shareTitle,
+        text: shareText,
+        url: shareUrl,
+      }).catch(err => {
+        if (err.name !== 'AbortError') {
+          console.error('Error sharing:', err);
+        }
+      });
+    } else {
+      navigator.clipboard.writeText(shareUrl).then(() => {
+        alert('Link da lição copiado!');
+      }).catch(() => {
+        alert('Não foi possível copiar o link.');
+      });
+    }
+  };
 
   // Suggested Next Lesson Logic
   const suggestedNextLesson = useMemo(() => {
@@ -1021,11 +1049,20 @@ export function Lessons({
 
   const filteredLessons = useMemo(() => {
     let base = SAMPLE_LESSONS.filter(l => l.difficulty === selectedLevel);
+    
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      base = base.filter(l => 
+        l.title.toLowerCase().includes(query) || 
+        l.description.toLowerCase().includes(query)
+      );
+    }
+
     if (!isOnline) {
       base = base.filter(l => downloadedLessons.includes(l.id));
     }
     return base;
-  }, [selectedLevel, isOnline, downloadedLessons]);
+  }, [selectedLevel, isOnline, downloadedLessons, searchQuery]);
 
   if (isQuizMode) {
     const question = GRAMMAR_QUIZ_QUESTIONS[quizIndex];
@@ -1370,32 +1407,40 @@ export function Lessons({
                 Você completou a lição: <span className="text-emerald-600 font-bold">{selectedLesson.title}</span>
               </p>
 
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-                {suggestedNextLesson ? (
+                <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+                  {suggestedNextLesson ? (
+                    <button
+                      onClick={() => {
+                        setSelectedLesson(suggestedNextLesson);
+                        setIsLessonFinished(false);
+                        setCurrentPartIndex(0);
+                        setMaxVisitedIndex(0);
+                        setSelectedOption(null);
+                        setIsCorrect(null);
+                        setFocusedOptionIndex(-1);
+                        if (suggestedNextLesson.difficulty !== selectedLevel) {
+                          setSelectedLevel(suggestedNextLesson.difficulty as any);
+                        }
+                      }}
+                      className="w-full sm:w-auto px-10 py-5 bg-emerald-600 text-white rounded-2xl font-black hover:bg-emerald-700 transition-all shadow-xl shadow-emerald-600/20 flex items-center justify-center gap-3 active:scale-95"
+                    >
+                      <span>Próxima Lição</span>
+                      <ChevronRight size={24} />
+                    </button>
+                  ) : (
+                    <p className="text-emerald-600 font-black mb-4">Parabéns! Você completou todas as lições deste nível!</p>
+                  )}
+                  
+                  <button 
+                    onClick={() => handleShareLesson(selectedLesson)}
+                    className="w-full sm:w-auto px-10 py-5 bg-white border-2 border-emerald-500 text-emerald-600 rounded-2xl font-bold hover:bg-emerald-50 transition-all flex items-center justify-center gap-2"
+                  >
+                    <Share2 size={22} />
+                    <span>Compartilhar</span>
+                  </button>
+
                   <button
                     onClick={() => {
-                      setSelectedLesson(suggestedNextLesson);
-                      setIsLessonFinished(false);
-                      setCurrentPartIndex(0);
-                      setMaxVisitedIndex(0);
-                      setSelectedOption(null);
-                      setIsCorrect(null);
-                      setFocusedOptionIndex(-1);
-                      if (suggestedNextLesson.difficulty !== selectedLevel) {
-                        setSelectedLevel(suggestedNextLesson.difficulty as any);
-                      }
-                    }}
-                    className="w-full sm:w-auto px-10 py-5 bg-emerald-600 text-white rounded-2xl font-black hover:bg-emerald-700 transition-all shadow-xl shadow-emerald-600/20 flex items-center justify-center gap-3 active:scale-95"
-                  >
-                    <span>Próxima Lição</span>
-                    <ChevronRight size={24} />
-                  </button>
-                ) : (
-                  <p className="text-emerald-600 font-black mb-4">Parabéns! Você completou todas as lições deste nível!</p>
-                )}
-                
-                <button
-                  onClick={() => {
                     setSelectedLesson(null);
                     setIsLessonFinished(false);
                     setCurrentPartIndex(0);
@@ -1672,33 +1717,6 @@ export function Lessons({
                   </motion.div>
                 )}
 
-                {selectedLesson.id === 'l1' && currentPartIndex === selectedLesson.parts.length - 1 && (
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    className="flex justify-center pt-4"
-                  >
-                    <button
-                      onClick={() => {
-                        const shareUrl = `https://esperanto.app/lessons?id=l1`;
-                        if (navigator.share) {
-                          navigator.share({
-                            title: 'Esperanto Lernu - Lição 1',
-                            text: 'Estou aprendendo Esperanto! Veja esta lição:',
-                            url: shareUrl,
-                          }).catch(console.error);
-                        } else {
-                          navigator.clipboard.writeText(shareUrl);
-                          alert('Link da lição copiado para a área de transferência!');
-                        }
-                      }}
-                      className="flex items-center gap-2 px-6 py-3 bg-white border-2 border-emerald-500 text-emerald-600 rounded-2xl font-bold hover:bg-emerald-50 transition-all shadow-sm"
-                    >
-                      <Share2 size={20} />
-                      Compartilhar Lição
-                    </button>
-                  </motion.div>
-                )}
 
                 <div className="pt-8 flex justify-end">
                   <button
@@ -1747,24 +1765,45 @@ export function Lessons({
           <h2 className="text-5xl font-bold text-slate-900 mb-6">Trilha de Aprendizado</h2>
           <p className="text-slate-500 max-w-2xl text-lg font-medium">Módulos sequenciais projetados para levar você do zero à fluência em tempo recorde.</p>
           
-          <div className="flex flex-wrap items-center gap-2 mt-10">
-            {[
-              { id: 'beginner', label: 'Iniciante', active: 'bg-emerald-600 shadow-emerald-600/20' },
-              { id: 'intermediate', label: 'Intermediário', active: 'bg-blue-600 shadow-blue-600/20' },
-              { id: 'advanced', label: 'Avançado', active: 'bg-purple-600 shadow-purple-600/20' }
-            ].map((level) => (
-              <button
-                key={level.id}
-                onClick={() => setSelectedLevel(level.id as any)}
-                className={`px-6 py-2.5 rounded-xl font-bold text-sm transition-all ${
-                  selectedLevel === level.id
-                    ? `${level.active} text-white shadow-lg`
-                    : 'bg-white border border-slate-100 text-slate-500 hover:border-slate-300'
-                }`}
-              >
-                {level.label}
-              </button>
-            ))}
+          <div className="flex flex-col md:flex-row md:items-center gap-4 mt-10">
+            <div className="flex flex-wrap items-center gap-2">
+              {[
+                { id: 'beginner', label: 'Iniciante', active: 'bg-emerald-600 shadow-emerald-600/20' },
+                { id: 'intermediate', label: 'Intermediário', active: 'bg-blue-600 shadow-blue-600/20' },
+                { id: 'advanced', label: 'Avançado', active: 'bg-purple-600 shadow-purple-600/20' }
+              ].map((level) => (
+                <button
+                  key={level.id}
+                  onClick={() => setSelectedLevel(level.id as any)}
+                  className={`px-6 py-2.5 rounded-xl font-bold text-sm transition-all ${
+                    selectedLevel === level.id
+                      ? `${level.active} text-white shadow-lg`
+                      : 'bg-white border border-slate-100 text-slate-500 hover:border-slate-300'
+                  }`}
+                >
+                  {level.label}
+                </button>
+              ))}
+            </div>
+
+            <div className="relative flex-grow max-w-md">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+              <input
+                type="text"
+                placeholder="Buscar lições..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-11 pr-10 py-2.5 bg-white border border-slate-100 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600 transition-colors"
+                >
+                  <X size={14} />
+                </button>
+              )}
+            </div>
           </div>
         </div>
         {!isOnline && (
@@ -1892,19 +1931,31 @@ export function Lessons({
         </button>
       </motion.div>
 
-      {filteredLessons.length === 0 && !isOnline ? (
+      {filteredLessons.length === 0 ? (
         <div className="bento-card p-10 md:p-20 text-center flex flex-col items-center">
           <div className="w-20 h-20 bg-slate-50 rounded-3xl flex items-center justify-center text-slate-300 mb-6">
-            <Zap size={32} />
+            <Search size={32} />
           </div>
-          <h3 className="text-2xl font-bold text-slate-900 mb-2">Nenhuma lição offline</h3>
-          <p className="text-slate-500 max-w-md mx-auto mb-8 font-medium">Você precisa baixar lições enquanto estiver online para estudá-las sem internet.</p>
-          <button 
-            className="px-8 py-3 bg-slate-900 text-white rounded-xl font-bold"
-            disabled
-          >
-            Aguardando Conexão...
-          </button>
+          <h3 className="text-2xl font-bold text-slate-900 mb-2">
+            {!isOnline && !downloadedLessons.some(id => SAMPLE_LESSONS.find(l => l.id === id)?.difficulty === selectedLevel) 
+              ? 'Nenhuma lição offline' 
+              : 'Nenhum resultado encontrado'}
+          </h3>
+          <p className="text-slate-500 max-w-md mx-auto mb-8 font-medium">
+            {!isOnline && !downloadedLessons.some(id => SAMPLE_LESSONS.find(l => l.id === id)?.difficulty === selectedLevel)
+              ? 'Você precisa baixar lições enquanto estiver online para estudá-las sem internet.'
+              : searchQuery 
+                ? `Não encontramos nenhuma lição correspondente a "${searchQuery}" neste nível.`
+                : 'Esta categoria ainda não possui lições disponíveis.'}
+          </p>
+          {searchQuery && (
+            <button 
+              onClick={() => setSearchQuery('')}
+              className="px-8 py-3 bg-slate-900 text-white rounded-xl font-bold hover:bg-emerald-600 transition-colors"
+            >
+              Limpar Busca
+            </button>
+          )}
         </div>
       ) : (
         <div className="grid md:grid-cols-2 gap-8">
@@ -1936,9 +1987,22 @@ export function Lessons({
                     <div className="flex-grow">
                       <h3 className="text-xl font-bold text-slate-900 mb-2 group-hover:text-emerald-700 transition-colors">{lesson.title}</h3>
                       <p className="text-slate-500 mb-6 font-medium leading-relaxed text-sm">{lesson.description}</p>
-                      <div className="flex items-center justify-center md:justify-start text-emerald-600 font-bold gap-2 text-sm">
-                        <span>{completedLessons.includes(lesson.id) ? 'Revisar Conteúdo' : 'Praticar Agora'}</span>
-                        <Play size={16} className="fill-current group-hover:translate-x-1 transition-transform" />
+                      <div className="flex items-center justify-center md:justify-start text-emerald-600 font-bold gap-4 text-sm mt-2">
+                        <div className="flex items-center gap-2">
+                          <span>{completedLessons.includes(lesson.id) ? 'Revisar Conteúdo' : 'Praticar Agora'}</span>
+                          <Play size={16} className="fill-current group-hover:translate-x-1 transition-transform" />
+                        </div>
+                        <button 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleShareLesson(lesson);
+                          }}
+                          className="flex items-center gap-1.5 text-slate-400 hover:text-emerald-600 transition-colors"
+                          title="Compartilhar lição"
+                        >
+                          <Share2 size={16} />
+                          <span className="text-xs">Compartilhar</span>
+                        </button>
                       </div>
                     </div>
                   </div>

@@ -20,7 +20,8 @@ import {
   RefreshCw,
   Bell,
   Flame,
-  Trophy
+  Trophy,
+  Star
 } from 'lucide-react';
 import { Hero } from './components/Hero';
 import { Lessons } from './components/Lessons';
@@ -53,8 +54,35 @@ export default function App() {
 
   const [notificationSettings, setNotificationSettings] = useState<NotificationSettings>(() => {
     const saved = localStorage.getItem('esperanto_notification_settings');
-    if (saved) return JSON.parse(saved);
-    return { lessonReminders: true, newContentAlerts: true, soundEnabled: true };
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (!parsed.dashboard || !parsed.dashboard.sections) {
+        parsed.dashboard = { 
+          layout: 'grid',
+          sections: {
+            progress: 'emerald',
+            achievements: 'violet',
+            settings: 'blue',
+            leaderboard: 'rose'
+          }
+        };
+      }
+      return parsed;
+    }
+    return { 
+      lessonReminders: true, 
+      newContentAlerts: true, 
+      soundEnabled: true,
+      dashboard: { 
+        layout: 'grid',
+        sections: {
+          progress: 'emerald',
+          achievements: 'violet',
+          settings: 'blue',
+          leaderboard: 'rose'
+        }
+      }
+    };
   });
 
   const [notifications, setNotifications] = useState<AppNotification[]>(() => {
@@ -273,6 +301,10 @@ export default function App() {
     setFlashcards(prev => prev.filter(c => c.id !== id));
   };
 
+  const handleUpdateFlashcard = (updatedCard: Flashcard) => {
+    setFlashcards(prev => prev.map(c => c.id === updatedCard.id ? updatedCard : c));
+  };
+
   const handleLessonComplete = (lessonId: string) => {
     if (!completedLessons.includes(lessonId)) {
       const newCompleted = [...completedLessons, lessonId];
@@ -309,8 +341,8 @@ export default function App() {
               className="flex items-center space-x-2 md:space-x-3 cursor-pointer group"
               onClick={() => setActiveTab('home')}
             >
-              <div className="w-8 h-8 md:w-10 md:h-10 bg-emerald-600 rounded-lg md:rounded-xl flex items-center justify-center text-white group-hover:scale-110 transition-transform shadow-lg shadow-emerald-600/20">
-                <Sparkles size={16} className="md:w-5 md:h-5" />
+              <div className="w-8 h-8 md:w-10 md:h-10 bg-emerald-50 border border-emerald-100 rounded-lg md:rounded-xl flex items-center justify-center text-emerald-600 group-hover:scale-110 transition-transform shadow-sm">
+                <Star size={16} className="md:w-5 md:h-5 fill-current" />
               </div>
               <span className="text-lg md:text-2xl font-bold tracking-tight text-slate-900">
                 Esperanto<span className="text-emerald-600 italic">Lernu</span>
@@ -526,6 +558,7 @@ export default function App() {
                   <Flashcards 
                     cards={flashcards} 
                     onAddCard={handleAddFlashcard}
+                    onUpdateCard={handleUpdateFlashcard}
                     onDeleteCard={handleDeleteFlashcard}
                     onAwardPoints={awardPoints}
                     soundEnabled={notificationSettings.soundEnabled}
@@ -573,12 +606,12 @@ export default function App() {
         
         <div className="max-w-7xl mx-auto px-6 sm:px-8 relative z-10">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-20">
-            <div className="space-y-6 md:col-span-1">
+            <div className="space-y-6 md:col-span-1 text-left">
               <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-emerald-600 rounded-xl flex items-center justify-center text-white shadow-xl shadow-emerald-900/40 transform rotate-3">
-                  <Globe size={20} />
+                <div className="w-10 h-10 bg-white border border-emerald-900/20 rounded-xl flex items-center justify-center text-emerald-500 shadow-xl shadow-emerald-900/40 transform rotate-3">
+                  <Star size={20} className="fill-current" />
                 </div>
-                <span className="font-black text-2xl text-white tracking-tighter">Esperanto<span className="text-emerald-500 italic">Lernu</span></span>
+                <span className="font-black text-2xl text-white tracking-tighter text-left">Esperanto<span className="text-emerald-500 italic">Lernu</span></span>
               </div>
               <p className="text-sm leading-relaxed text-slate-400 font-medium max-w-xs">
                 A tecnologia aproximando o mundo através da língua da paz. Projeto open-source para a comunidade global.

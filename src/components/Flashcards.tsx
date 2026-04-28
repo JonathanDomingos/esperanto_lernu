@@ -1,18 +1,19 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Plus, Trash2, RotateCcw, ChevronLeft, ChevronRight, Check, X, Sparkles, Search } from 'lucide-react';
+import { Plus, Trash2, RotateCcw, ChevronLeft, ChevronRight, Check, X, Sparkles, Search, Shuffle } from 'lucide-react';
 import { Flashcard } from '../types';
 import { soundService } from '../services/soundService';
 
 interface FlashcardsProps {
   cards: Flashcard[];
   onAddCard: (front: string, back: string, category?: string) => void;
+  onUpdateCard: (card: Flashcard) => void;
   onDeleteCard: (id: string) => void;
   onAwardPoints: (amount: number) => void;
   soundEnabled?: boolean;
 }
 
-export function Flashcards({ cards, onAddCard, onDeleteCard, onAwardPoints, soundEnabled }: FlashcardsProps) {
+export function Flashcards({ cards, onAddCard, onUpdateCard, onDeleteCard, onAwardPoints, soundEnabled }: FlashcardsProps) {
   const [isAdding, setIsAdding] = useState(false);
   const [newFront, setNewFront] = useState('');
   const [newBack, setNewBack] = useState('');
@@ -20,13 +21,22 @@ export function Flashcards({ cards, onAddCard, onDeleteCard, onAwardPoints, soun
   const [selectedCategory, setSelectedCategory] = useState('Todos');
   const [searchQuery, setSearchQuery] = useState('');
   const [practiceMode, setPracticeMode] = useState(false);
+  const [isQuickReview, setIsQuickReview] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
   const [correctCount, setCorrectCount] = useState(0);
   const [incorrectCount, setIncorrectCount] = useState(0);
   const [showSummary, setShowSummary] = useState(false);
   const [lastResult, setLastResult] = useState<'correct' | 'incorrect' | null>(null);
+  const [showConfig, setShowConfig] = useState(false);
+  const [shuffleOrder, setShuffleOrder] = useState(true);
+  const [sideMode, setSideMode] = useState<'front' | 'back' | 'random'>('front');
+  const [sessionCards, setSessionCards] = useState<any[]>([]);
+  const [cardToDelete, setCardToDelete] = useState<string | null>(null);
 
+  const now = Date.now();
+  const dueCards = cards.filter(c => !c.nextReview || c.nextReview <= now);
+  
   const categories = ['Todos', ...Array.from(new Set(cards.map(c => c.category || 'Geral')))];
   
   const filteredCards = cards.filter(c => {
@@ -38,11 +48,63 @@ export function Flashcards({ cards, onAddCard, onDeleteCard, onAwardPoints, soun
 
   const startPractice = () => {
     if (filteredCards.length === 0) return;
+    
+    let prepared = filteredCards.map(c => {
+      const showFrontFirst = sideMode === 'random' ? Math.random() > 0.5 : sideMode === 'front';
+      return {
+        ...c,
+        displayFront: showFrontFirst ? c.front : c.back,
+        displayBack: showFrontFirst ? c.back : c.front,
+        frontLabel: showFrontFirst ? (c.category || 'Esperanto') : 'Português',
+        backLabel: showFrontFirst ? 'Português' : (c.category || 'Esperanto')
+      };
+    });
+
+    if (shuffleOrder) {
+      prepared = [...prepared].sort(() => Math.random() - 0.5);
+    }
+
+    setIsQuickReview(false);
+    setSessionCards(prepared);
     setCurrentIndex(0);
     setCorrectCount(0);
     setIncorrectCount(0);
     setShowSummary(false);
     setPracticeMode(true);
+    setShowConfig(false);
+    setLastResult(null);
+  };
+
+  const startQuickReview = () => {
+    // 1. Get cards due for review (nextReview <= now)
+    // 2. Mix with some new cards (never reviewed)
+    const reviewedCards = cards.filter(c => c.lastReview && (!c.nextReview || c.nextReview <= now));
+    const newCards = cards.filter(c => !c.lastReview);
+    
+    // Sort reviewed cards by "overdueness" if possible, otherwise just shuffle
+    let toReview = [...reviewedCards].sort(() => Math.random() - 0.5).slice(0, 5);
+    let toLearn = [...newCards].sort(() => Math.random() - 0.5).slice(0, 3);
+    
+    const combined = [...toReview, ...toLearn].sort(() => Math.random() - 0.5);
+    
+    if (combined.length === 0) return;
+
+    const prepared = combined.map(c => ({
+      ...c,
+      displayFront: c.front,
+      displayBack: c.back,
+      frontLabel: c.category || 'Esperanto',
+      backLabel: 'Português'
+    }));
+
+    setIsQuickReview(true);
+    setSessionCards(prepared);
+    setCurrentIndex(0);
+    setCorrectCount(0);
+    setIncorrectCount(0);
+    setShowSummary(false);
+    setPracticeMode(true);
+    setShowConfig(false);
     setLastResult(null);
   };
 
@@ -58,28 +120,57 @@ export function Flashcards({ cards, onAddCard, onDeleteCard, onAwardPoints, soun
 
   const nextCard = (correct: boolean) => {
     setLastResult(correct ? 'correct' : 'incorrect');
+    
+    // Spaced Repetition Logic (Updated SM-2 Simplified)
+    const card = sessionCards[currentIndex];
+    const newCardData = { ...card };
+    
     if (correct) {
       onAwardPoints(5);
       setCorrectCount(prev => prev + 1);
       if (soundEnabled) soundService.playCorrect();
+      
+      // Update SR data
+      const easeFactor = card.easeFactor || 2.5;
+      const reps = (card.reps || 0) + 1;
+      let interval = card.interval || 1;
+      
+      if (reps === 1) interval = 1;
+      else if (reps === 2) interval = 6;
+      else interval = Math.round(interval * easeFactor);
+      
+      newCardData.reps = reps;
+      newCardData.interval = interval;
+      newCardData.easeFactor = easeFactor;
+      newCardData.lastReview = Date.now();
+      newCardData.nextReview = Date.now() + interval * 24 * 60 * 60 * 1000;
     } else {
       setIncorrectCount(prev => prev + 1);
       if (soundEnabled) soundService.playIncorrect();
+      
+      // Reset SR data on failure
+      newCardData.reps = 0;
+      newCardData.interval = 1;
+      newCardData.lastReview = Date.now();
+      newCardData.nextReview = Date.now() + 1 * 24 * 60 * 60 * 1000; // Review again tomorrow
     }
+
+    // Call onUpdateCard to persist changes
+    onUpdateCard(newCardData);
 
     setIsFlipped(false);
     setTimeout(() => {
       setLastResult(null);
-      if (currentIndex === filteredCards.length - 1) {
+      if (currentIndex === sessionCards.length - 1) {
         setShowSummary(true);
         onAwardPoints(20); // Bonus for finishing session
       } else {
-        setCurrentIndex((prev) => (prev + 1) % filteredCards.length);
+        setCurrentIndex((prev) => (prev + 1) % sessionCards.length);
       }
     }, 400);
   };
 
-  if (practiceMode && filteredCards.length > 0) {
+  if (practiceMode && sessionCards.length > 0) {
     if (showSummary) {
       return (
         <div className="max-w-2xl mx-auto py-12 text-center">
@@ -127,8 +218,8 @@ export function Flashcards({ cards, onAddCard, onDeleteCard, onAwardPoints, soun
     }
 
     const totalAnswered = correctCount + incorrectCount;
-    const progress = (totalAnswered / filteredCards.length) * 100;
-    const card = filteredCards[currentIndex];
+    const progress = (totalAnswered / sessionCards.length) * 100;
+    const card = sessionCards[currentIndex];
 
     return (
       <div className="max-w-2xl mx-auto py-12">
@@ -159,7 +250,7 @@ export function Flashcards({ cards, onAddCard, onDeleteCard, onAwardPoints, soun
               <div className="text-right">
                 <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 leading-none mb-1 block">Progresso</span>
                 <span className="text-slate-900 font-black text-lg leading-none block">
-                  {currentIndex + 1} <span className="text-slate-300">/</span> {filteredCards.length}
+                  {currentIndex + 1} <span className="text-slate-300">/</span> {sessionCards.length}
                 </span>
               </div>
             </div>
@@ -172,11 +263,11 @@ export function Flashcards({ cards, onAddCard, onDeleteCard, onAwardPoints, soun
               animate={{ width: `${progress}%` }}
               transition={{ type: "spring", stiffness: 100, damping: 20 }}
             />
-            {filteredCards.map((_, idx) => (
+            {sessionCards.map((_, idx) => (
               <div 
                 key={idx}
                 className="absolute top-0 h-full w-px bg-white/20 z-10"
-                style={{ left: `${(idx / filteredCards.length) * 100}%` }}
+                style={{ left: `${(idx / sessionCards.length) * 100}%` }}
               />
             ))}
           </div>
@@ -214,27 +305,27 @@ export function Flashcards({ cards, onAddCard, onDeleteCard, onAwardPoints, soun
                 <div className="absolute inset-0 z-0">
                   <img 
                     src={card.imageUrl} 
-                    alt={card.front}
+                    alt={card.displayFront}
                     className="w-full h-full object-cover opacity-20 grayscale"
                     referrerPolicy="no-referrer"
                   />
                   <div className="absolute inset-0 bg-white/60" />
                 </div>
               )}
-              <div className="relative z-10 flex flex-col items-center">
+              <div className="relative z-10 flex flex-col items-center max-h-full overflow-y-auto px-4 custom-scrollbar">
                 <span className="bento-label mb-6 flex items-center gap-2">
-                  {card.category || 'Esperanto'}
+                  {card.frontLabel}
                   {card.imageUrl && <Sparkles size={10} className="text-emerald-500 fill-current" title="Visual por IA" />}
                 </span>
-                <h3 className="text-5xl font-bold text-slate-900 tracking-tight">{card.front}</h3>
-                <p className="mt-12 text-slate-400 text-xs font-bold tracking-widest uppercase">Clique para revelar</p>
+                <h3 className="text-4xl md:text-5xl font-bold text-slate-900 tracking-tight break-words">{card.displayFront}</h3>
+                <p className="mt-12 text-slate-400 text-xs font-bold tracking-widest uppercase mb-4">Clique para revelar</p>
               </div>
             </div>
 
             {/* Back */}
-            <div className="absolute inset-0 bento-card flex flex-col items-center justify-center p-8 md:p-12 text-center backface-hidden rotate-y-180 bg-emerald-50 border-emerald-200">
-              <span className="bento-label text-emerald-600 mb-4">Português</span>
-              <h3 className="text-4xl font-bold text-emerald-900">{card.back}</h3>
+            <div className="absolute inset-0 bento-card flex flex-col items-center justify-center p-8 md:p-12 text-center backface-hidden rotate-y-180 bg-emerald-50 border-emerald-200 overflow-y-auto custom-scrollbar">
+              <span className="bento-label text-emerald-600 mb-4">{card.backLabel}</span>
+              <h3 className="text-3xl md:text-4xl font-bold text-emerald-900 break-words">{card.displayBack}</h3>
               <p className="mt-8 text-emerald-600/60 text-sm">Continuar aprendendo</p>
             </div>
           </motion.div>
@@ -267,13 +358,30 @@ export function Flashcards({ cards, onAddCard, onDeleteCard, onAwardPoints, soun
           <h2 className="text-5xl font-bold text-slate-900 mb-4">Seu Baralho</h2>
           <p className="text-slate-500 font-medium">Memorize vocabulário com repetição espaçada.</p>
         </div>
-        <div className="flex gap-4">
+        <div className="flex flex-wrap gap-4">
+          <div className="relative group">
+            <button 
+              onClick={startQuickReview}
+              disabled={cards.length === 0}
+              className="px-8 py-3 bg-white text-slate-900 border-2 border-slate-900 rounded-2xl font-bold hover:bg-slate-900 hover:text-white transition-all flex items-center gap-2 relative overflow-hidden disabled:opacity-50 h-full"
+            >
+              <div className="absolute inset-0 bg-emerald-500/10 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
+              <RotateCcw size={18} className="relative z-10" /> 
+              <span className="relative z-10">Revisão Rápida</span>
+            </button>
+            {dueCards.length > 0 && (
+              <div className="absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] text-white font-bold ring-2 ring-white shadow-lg z-20 animate-bounce cursor-default">
+                {dueCards.length}
+              </div>
+            )}
+          </div>
+          
           {filteredCards.length > 0 && (
             <button 
-              onClick={startPractice}
-              className="px-8 py-3 bg-slate-900 text-white rounded-2xl font-bold hover:bg-emerald-600 transition-all flex items-center gap-2"
+              onClick={() => setShowConfig(true)}
+              className="px-8 py-3 bg-slate-100 text-slate-600 rounded-2xl font-bold hover:bg-emerald-600 hover:text-white transition-all flex items-center gap-2"
             >
-              <RotateCcw size={18} /> Treinar Agora
+              <RotateCcw size={18} /> Praticar Tudo
             </button>
           )}
           <button 
@@ -316,6 +424,120 @@ export function Flashcards({ cards, onAddCard, onDeleteCard, onAwardPoints, soun
       )}
 
       <AnimatePresence>
+        {cardToDelete && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.9 }}
+            className="fixed inset-0 z-[60] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-sm"
+          >
+            <div className="bento-card p-8 bg-white max-w-sm w-full shadow-2xl text-center">
+              <div className="w-16 h-16 bg-red-100 text-red-600 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                <Trash2 size={28} />
+              </div>
+              <h3 className="text-2xl font-bold text-slate-900 mb-2">Excluir Card?</h3>
+              <p className="text-slate-500 mb-8 font-medium">Esta ação não pode ser desfeita. Você perderá este item do seu baralho.</p>
+              
+              <div className="flex gap-3">
+                <button 
+                  onClick={() => setCardToDelete(null)}
+                  className="flex-1 px-6 py-3 bg-slate-100 text-slate-500 rounded-xl font-bold hover:bg-slate-200 transition-all"
+                >
+                  Cancelar
+                </button>
+                <button 
+                  onClick={() => {
+                    if (cardToDelete) {
+                      onDeleteCard(cardToDelete);
+                      setCardToDelete(null);
+                    }
+                  }}
+                  className="flex-1 px-6 py-3 bg-red-600 text-white rounded-xl font-bold hover:bg-red-700 transition-all shadow-lg shadow-red-600/20"
+                >
+                  Confirmar
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+
+        {showConfig && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.9 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-sm"
+          >
+            <div className="bento-card p-8 bg-white max-w-md w-full shadow-2xl">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-12 h-12 bg-emerald-100 text-emerald-600 rounded-2xl flex items-center justify-center">
+                  <Shuffle size={24} />
+                </div>
+                <h3 className="text-2xl font-bold text-slate-900">Configurar Treino</h3>
+              </div>
+
+              <div className="space-y-6 mb-8">
+                <div>
+                  <label className="bento-label mb-3 block text-slate-500">Ordem dos Cards</label>
+                  <label className="flex items-center gap-3 p-4 bg-slate-50 rounded-2xl cursor-pointer hover:bg-slate-100 transition-colors">
+                    <input 
+                      type="checkbox" 
+                      checked={shuffleOrder}
+                      onChange={(e) => setShuffleOrder(e.target.checked)}
+                      className="w-5 h-5 accent-emerald-500"
+                    />
+                    <span className="font-bold text-slate-700">Embaralhar ordem</span>
+                  </label>
+                </div>
+
+                <div>
+                  <label className="bento-label mb-3 block text-slate-500">Lado Inicial</label>
+                  <div className="grid grid-cols-1 gap-2">
+                    {[
+                      { id: 'front', label: 'Esperanto Primeiro' },
+                      { id: 'back', label: 'Português Primeiro' },
+                      { id: 'random', label: 'Misturado (Aleatório)' }
+                    ].map(option => (
+                      <label 
+                        key={option.id}
+                        className={`flex items-center gap-3 p-4 rounded-2xl cursor-pointer border-2 transition-all ${
+                          sideMode === option.id 
+                            ? 'bg-emerald-50 border-emerald-500 text-emerald-700' 
+                            : 'bg-white border-slate-100 text-slate-600 hover:border-slate-200'
+                        }`}
+                      >
+                        <input 
+                          type="radio" 
+                          name="sideMode"
+                          checked={sideMode === option.id}
+                          onChange={() => setSideMode(option.id as any)}
+                          className="hidden"
+                        />
+                        <span className="font-bold">{option.label}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex gap-3">
+                <button 
+                  onClick={() => setShowConfig(false)}
+                  className="flex-1 px-6 py-4 bg-slate-100 text-slate-500 rounded-2xl font-bold hover:bg-slate-200 transition-all"
+                >
+                  Cancelar
+                </button>
+                <button 
+                  onClick={startPractice}
+                  className="flex-1 px-6 py-4 bg-emerald-600 text-white rounded-2xl font-bold hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-600/20"
+                >
+                  Começar
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+
         {isAdding && (
           <motion.div 
             initial={{ opacity: 0, scale: 0.9 }}
@@ -400,7 +622,7 @@ export function Flashcards({ cards, onAddCard, onDeleteCard, onAwardPoints, soun
             <motion.div 
               key={card.id}
               layout
-              className="bento-card p-6 flex flex-col justify-between group h-48 relative overflow-hidden"
+              className="bento-card p-6 pb-12 flex flex-col justify-between group min-h-64 relative overflow-hidden"
             >
               {card.imageUrl && (
                 <div className="absolute top-0 right-0 w-24 h-24 -mr-8 -mt-8 opacity-10 group-hover:opacity-20 transition-opacity">
@@ -416,15 +638,18 @@ export function Flashcards({ cards, onAddCard, onDeleteCard, onAwardPoints, soun
                 <div className="flex items-center gap-2 mb-2">
                   <span className="bento-label text-[8px]">{card.category || 'Esperanto'}</span>
                   {card.imageUrl && <Sparkles size={8} className="text-emerald-500" />}
+                  {(!card.nextReview || card.nextReview <= now) && (
+                    <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" title="Pronto para revisão" />
+                  )}
                 </div>
                 <p className="text-xl font-bold text-slate-900">{card.front}</p>
                 <div className="mt-4 pt-4 border-t border-slate-50">
                   <span className="bento-label text-[8px] text-emerald-600">Tradução</span>
-                  <p className="text-slate-500 font-medium">{card.back}</p>
+                  <p className="text-slate-500 font-medium break-words">{card.back}</p>
                 </div>
               </div>
               <button 
-                onClick={() => onDeleteCard(card.id)}
+                onClick={() => setCardToDelete(card.id)}
                 className="self-end p-2 text-slate-300 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100 relative z-20"
               >
                 <Trash2 size={16} />

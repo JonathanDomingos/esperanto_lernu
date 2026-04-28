@@ -32,7 +32,7 @@ export function Hero({ onStart, onNavigate, stats }: HeroProps) {
             animate={{ opacity: 1, x: 0 }}
             className="text-3xl md:text-5xl font-black text-slate-900 tracking-tighter truncate md:whitespace-normal"
           >
-            Bonvenon al la <span className="text-emerald-600 italic">Hubo</span>
+            Bonvenon al la <span className="text-emerald-600 italic pr-1">Leciono</span>
           </motion.h1>
           <motion.p 
             initial={{ opacity: 0, x: -20 }}
@@ -79,7 +79,7 @@ export function Hero({ onStart, onNavigate, stats }: HeroProps) {
           onClick={onStart}
         >
           <div className="relative z-10">
-            <span className="bento-label text-white mb-2 border-b border-emerald-500 pb-1">Retomar Estudos</span>
+            <span className="bento-label !text-white mb-2 border-b border-white/30 pb-1">Retomar Estudos</span>
             <h2 className="text-4xl md:text-5xl font-bold mb-6 leading-tight mt-6">
               La Akuzativo: <br/>
               <span className="text-emerald-200 italic font-serif">Kiam uzi la literon '-n'</span>
@@ -153,7 +153,7 @@ export function Hero({ onStart, onNavigate, stats }: HeroProps) {
             </svg>
             <div className="absolute inset-0 flex flex-col items-center justify-center">
               <span className="font-black text-2xl text-slate-900">{Math.round((Math.min(stats.points, 1000) / 1000) * 100)}%</span>
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Nível 1</span>
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Nível 1</span>
             </div>
           </div>
           <div className="flex flex-col gap-2 w-full">
@@ -171,8 +171,10 @@ export function Hero({ onStart, onNavigate, stats }: HeroProps) {
             </div>
           </div>
           
-          <div className="absolute -top-10 -right-10 w-24 h-24 bg-emerald-50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-            <Zap className="text-emerald-500 translate-x-3 translate-y-3" size={24} />
+          <div className="absolute top-6 right-6">
+            <div className="bg-emerald-50 text-emerald-600 text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full flex items-center gap-1 shadow-sm border border-emerald-100">
+              <Zap size={10} className="fill-current" /> Meta
+            </div>
           </div>
         </motion.div>
 

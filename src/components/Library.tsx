@@ -3,14 +3,16 @@ import { motion, AnimatePresence } from 'motion/react';
 import { ExternalLink, Video, Book, Users, Search, Play, Globe, LayoutGrid, List, Plus } from 'lucide-react';
 import { ResourceItem } from '../types';
 import { DICTIONARY } from '../data/dictionary';
+import Fuse from 'fuse.js';
 
-const RESOURCES: ResourceItem[] = [
+const RESOURCES: (ResourceItem & { featured?: boolean })[] = [
   {
     title: 'Lernu.net',
     description: 'A maior plataforma do mundo para aprender Esperanto. Gratuito, multilíngue e com fóruns ativos.',
     url: 'https://lernu.net',
     category: 'Course',
-    icon: 'Book'
+    icon: 'Book',
+    featured: true
   },
   {
     title: 'Duolingo Esperanto',
@@ -24,7 +26,8 @@ const RESOURCES: ResourceItem[] = [
     description: 'Canal de YouTube com lições práticas, música e curiosidades sobre a cultura esperantista.',
     url: 'https://www.youtube.com/user/EsperantoVarietyShow',
     category: 'Video',
-    icon: 'Video'
+    icon: 'Video',
+    featured: true
   },
   {
     title: 'Vortaro.net',
@@ -49,6 +52,120 @@ const RESOURCES: ResourceItem[] = [
   }
 ];
 
+interface ResourceCardProps {
+  item: ResourceItem & { featured?: boolean };
+  index: number;
+  key?: string | number;
+}
+
+function ResourceCard({ item, index }: ResourceCardProps): React.ReactElement {
+  const getTheme = (category: ResourceItem['category']) => {
+    switch (category) {
+      case 'Video': 
+        return {
+          bg: 'bg-red-50',
+          hoverBg: 'hover:bg-red-100/50',
+          iconBg: 'bg-red-100 text-red-600',
+          accent: 'text-red-600',
+          border: 'border-red-100',
+          glow: 'group-hover:shadow-red-200/50'
+        };
+      case 'Course':
+        return {
+          bg: 'bg-blue-50',
+          hoverBg: 'hover:bg-blue-100/50',
+          iconBg: 'bg-blue-100 text-blue-600',
+          accent: 'text-blue-600',
+          border: 'border-blue-100',
+          glow: 'group-hover:shadow-blue-200/50'
+        };
+      case 'Community':
+        return {
+          bg: 'bg-indigo-50',
+          hoverBg: 'hover:bg-indigo-100/50',
+          iconBg: 'bg-indigo-100 text-indigo-600',
+          accent: 'text-indigo-600',
+          border: 'border-indigo-100',
+          glow: 'group-hover:shadow-indigo-200/50'
+        };
+      case 'Dictionary':
+        return {
+          bg: 'bg-emerald-50',
+          hoverBg: 'hover:bg-emerald-100/50',
+          iconBg: 'bg-emerald-100 text-emerald-600',
+          accent: 'text-emerald-600',
+          border: 'border-emerald-100',
+          glow: 'group-hover:shadow-emerald-200/50'
+        };
+    }
+  };
+
+  const getIcon = (category: ResourceItem['category']) => {
+    switch (category) {
+      case 'Video': return <Video size={24} />;
+      case 'Course': return <Book size={24} />;
+      case 'Community': return <Users size={24} />;
+      case 'Dictionary': return <Search size={24} />;
+    }
+  };
+
+  const theme = getTheme(item.category);
+
+  return (
+    <motion.a
+      href={item.url}
+      target="_blank"
+      rel="noopener noreferrer"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: index * 0.1 }}
+      className={`group relative flex flex-col p-8 rounded-[32px] border-2 transition-all duration-500 overflow-hidden ${theme.bg} ${theme.border} ${theme.hoverBg} hover:shadow-2xl ${theme.glow} h-full`}
+    >
+      {/* Decorative Background Shape */}
+      <div className={`absolute -right-8 -top-8 w-32 h-32 rounded-full opacity-5 group-hover:scale-150 transition-transform duration-700 pointer-events-none ${theme.iconBg}`} />
+
+      <div className="flex justify-between items-start mb-10 relative z-10">
+        <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shadow-sm transition-transform group-hover:scale-110 duration-500 ${theme.iconBg}`}>
+          {getIcon(item.category)}
+        </div>
+        {item.featured && (
+          <div className="flex items-center gap-1.5 px-3 py-1 bg-white/80 backdrop-blur-sm border border-slate-100 rounded-full shadow-sm">
+            <span className="animate-pulse w-1.5 h-1.5 rounded-full bg-emerald-500" />
+            <span className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Destaque</span>
+          </div>
+        )}
+      </div>
+
+      <div className="flex-grow relative z-10">
+        <div className="flex items-center gap-2 mb-3">
+          <span className={`text-[10px] font-black uppercase tracking-widest ${theme.accent}`}>
+            {item.category}
+          </span>
+          <div className={`h-px flex-grow ${theme.border} opacity-50`} />
+        </div>
+        
+        <h3 className="text-2xl font-black text-slate-900 mb-4 group-hover:translate-x-1 transition-transform duration-300">
+          {item.title}
+        </h3>
+        
+        <p className="text-slate-500 text-sm font-medium leading-relaxed mb-8 opacity-80 group-hover:opacity-100 transition-opacity">
+          {item.description}
+        </p>
+      </div>
+
+      <div className="mt-auto relative z-10 flex items-center justify-between">
+        <div className={`font-black text-[10px] uppercase tracking-widest flex items-center gap-2 ${theme.accent} opacity-0 group-hover:opacity-100 transition-all transform translate-y-2 group-hover:translate-y-0 duration-300`}>
+          Acessar Agora
+          <ExternalLink size={12} strokeWidth={3} />
+        </div>
+        <div className="p-2 bg-white/50 rounded-xl opacity-0 group-hover:opacity-100 transform translate-x-4 group-hover:translate-x-0 transition-all duration-500">
+          <Play size={12} className={`fill-current ${theme.accent}`} />
+        </div>
+      </div>
+    </motion.a>
+  );
+}
+
 interface LibrarySectionProps {
   onAddFlashcard: (front: string, back: string, category?: string) => void;
   onNavigate: (tab: 'home' | 'lessons' | 'library' | 'dashboard', content?: 'lessons' | 'flashcards') => void;
@@ -58,15 +175,18 @@ export function LibrarySection({ onAddFlashcard, onNavigate }: LibrarySectionPro
   const [view, setView] = useState<'resources' | 'glossary'>('resources');
   const [searchTerm, setSearchTerm] = useState('');
 
+  const fuse = useMemo(() => new Fuse(DICTIONARY, {
+    keys: ['word', 'translation', 'category'],
+    threshold: 0.35,
+    distance: 100,
+    ignoreLocation: true,
+    minMatchCharLength: 2,
+  }), []);
+
   const filteredGlossary = useMemo(() => {
     if (!searchTerm.trim()) return DICTIONARY;
-    const lower = searchTerm.toLowerCase();
-    return DICTIONARY.filter(e => 
-      e.word.toLowerCase().includes(lower) || 
-      e.translation.toLowerCase().includes(lower) ||
-      (e.category && e.category.toLowerCase().includes(lower))
-    );
-  }, [searchTerm]);
+    return fuse.search(searchTerm).map(result => result.item);
+  }, [searchTerm, fuse]);
 
   const handleAddAllToFlashcards = () => {
     if (filteredGlossary.length === 0) return;
@@ -77,16 +197,6 @@ export function LibrarySection({ onAddFlashcard, onNavigate }: LibrarySectionPro
     
     // Switch to flashcards view
     onNavigate('lessons', 'flashcards');
-  };
-
-  const getIcon = (type: string) => {
-    switch (type) {
-      case 'Video': return <Video size={18} />;
-      case 'Course': return <Book size={18} />;
-      case 'Community': return <Users size={18} />;
-      case 'Dictionary': return <Search size={18} />;
-      default: return <Search size={18} />;
-    }
   };
 
   return (
@@ -119,45 +229,7 @@ export function LibrarySection({ onAddFlashcard, onNavigate }: LibrarySectionPro
       {view === 'resources' ? (
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
           {RESOURCES.map((item, i) => (
-            <motion.a
-              key={item.title}
-              href={item.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              initial={{ opacity: 0, y: 15 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.08 }}
-              className="group block bento-card-interactive p-10"
-            >
-              <div className="flex justify-between items-start mb-8">
-                <div className={`p-4 rounded-[20px] ${
-                  item.category === 'Video' ? 'bg-red-50 text-red-500 border border-red-100' :
-                  item.category === 'Course' ? 'bg-blue-50 text-blue-500 border border-blue-100' :
-                  item.category === 'Community' ? 'bg-indigo-50 text-indigo-500 border border-indigo-100' :
-                  'bg-emerald-50 text-emerald-500 border border-emerald-100'
-                }`}>
-                  {getIcon(item.category)}
-                </div>
-                <ExternalLink size={18} className="text-slate-300 group-hover:text-emerald-500 transition-colors" />
-              </div>
-
-              <span className="bento-label mb-4 block">
-                {item.category}
-              </span>
-
-              <h3 className="text-2xl font-bold text-slate-900 mb-4 group-hover:text-emerald-700 transition-colors">
-                {item.title}
-              </h3>
-              
-              <p className="text-slate-500 text-sm leading-relaxed mb-8 font-medium">
-                {item.description}
-              </p>
-
-              <div className="flex items-center text-xs font-bold text-emerald-600 gap-2 opacity-0 group-hover:opacity-100 transform translate-y-2 group-hover:translate-y-0 transition-all">
-                <span>EXPLORAR RECURSO</span>
-                <Play size={10} className="fill-current" />
-              </div>
-            </motion.a>
+            <ResourceCard key={item.title} item={item} index={i} />
           ))}
         </div>
       ) : (

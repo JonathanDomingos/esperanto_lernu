@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion } from 'motion/react';
-import { Award, Trophy, Users, Star, Flame, Zap, Settings, Bell, Volume2 } from 'lucide-react';
-import { Badge, UserStats, NotificationSettings } from '../types';
+import { Award, Trophy, Users, Star, Flame, Zap, Settings, Bell, Volume2, LayoutGrid, List, Palette } from 'lucide-react';
+import { Badge, UserStats, NotificationSettings, DashboardSettings } from '../types';
 
 interface DashboardProps {
   stats: UserStats;
@@ -18,26 +18,98 @@ const MOCK_LEADERBOARD = [
   { name: 'Knabo_Bona', points: 1600, level: 8 },
 ];
 
+const THEMES = {
+  emerald: {
+    primary: 'text-emerald-500',
+    secondary: 'text-emerald-700',
+    bg: 'bg-emerald-50',
+    bgHover: 'group-hover:bg-emerald-100',
+    border: 'border-emerald-100',
+    accent: 'emerald',
+    gradient: 'bento-gradient',
+    leaderboardUser: 'bg-emerald-600 border-emerald-500',
+    leaderboardPoints: 'text-emerald-400',
+    toggleOn: 'bg-emerald-500'
+  },
+  blue: {
+    primary: 'text-blue-500',
+    secondary: 'text-blue-700',
+    bg: 'bg-blue-50',
+    bgHover: 'group-hover:bg-blue-100',
+    border: 'border-blue-100',
+    accent: 'blue',
+    gradient: 'bg-gradient-to-br from-blue-500 to-indigo-600',
+    leaderboardUser: 'bg-blue-600 border-blue-500',
+    leaderboardPoints: 'text-blue-400',
+    toggleOn: 'bg-blue-500'
+  },
+  violet: {
+    primary: 'text-violet-500',
+    secondary: 'text-violet-700',
+    bg: 'bg-violet-50',
+    bgHover: 'group-hover:bg-violet-100',
+    border: 'border-violet-100',
+    accent: 'violet',
+    gradient: 'bg-gradient-to-br from-violet-500 to-purple-600',
+    leaderboardUser: 'bg-violet-600 border-violet-500',
+    leaderboardPoints: 'text-violet-400',
+    toggleOn: 'bg-violet-500'
+  },
+  rose: {
+    primary: 'text-rose-500',
+    secondary: 'text-rose-700',
+    bg: 'bg-rose-50',
+    bgHover: 'group-hover:bg-rose-100',
+    border: 'border-rose-100',
+    accent: 'rose',
+    gradient: 'bg-gradient-to-br from-rose-500 to-pink-600',
+    leaderboardUser: 'bg-rose-600 border-rose-500',
+    leaderboardPoints: 'text-rose-400',
+    toggleOn: 'bg-rose-500'
+  }
+};
+
 export function Dashboard({ stats, allBadges, settings, onUpdateSettings }: DashboardProps) {
   const level = Math.floor(stats.points / 500) + 1;
   const progressToNextLevel = (stats.points % 500) / 5;
+  const { layout, sections } = settings.dashboard;
 
   const toggleSetting = (key: keyof NotificationSettings) => {
     onUpdateSettings({ ...settings, [key]: !settings[key] });
   };
 
+  const updateDashboardSetting = (key: keyof DashboardSettings, value: any) => {
+    onUpdateSettings({
+      ...settings,
+      dashboard: { ...settings.dashboard, [key]: value }
+    });
+  };
+
+  const updateSectionColor = (section: keyof DashboardSettings['sections'], color: any) => {
+    onUpdateSettings({
+      ...settings,
+      dashboard: {
+        ...settings.dashboard,
+        sections: {
+          ...settings.dashboard.sections,
+          [section]: color
+        }
+      }
+    });
+  };
+
   return (
     <div className="max-w-7xl mx-auto px-6 py-20">
-      <div className="grid lg:grid-cols-3 gap-8">
+      <div className={`grid ${layout === 'grid' ? 'lg:grid-cols-3' : 'grid-cols-1'} gap-8`}>
         
         {/* Left Column: Progress & Stats */}
-        <div className="lg:col-span-2 space-y-8">
+        <div className={`${layout === 'grid' ? 'lg:col-span-2' : ''} space-y-8`}>
           <div className="bento-card p-8 md:p-12 bg-white relative overflow-hidden group">
-            <div className="absolute -top-24 -right-24 w-64 h-64 bg-emerald-50 rounded-full blur-3xl opacity-50 group-hover:bg-emerald-100 transition-colors duration-700" />
+            <div className={`absolute -top-24 -right-24 w-64 h-64 ${THEMES[sections.progress].bg} rounded-full blur-3xl opacity-50 ${THEMES[sections.progress].bgHover} transition-colors duration-700`} />
             
-            <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between mb-10 gap-6">
+            <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between mb-10 gap-6 text-left">
               <div>
-                <div className="inline-flex items-center gap-2 px-3 py-1 bg-emerald-50 text-emerald-700 rounded-full text-[10px] font-black uppercase tracking-widest mb-4">
+                <div className={`inline-flex items-center gap-2 px-3 py-1 ${THEMES[sections.progress].bg} ${THEMES[sections.progress].secondary} rounded-full text-[10px] font-black uppercase tracking-widest mb-4`}>
                   <Flame size={12} /> Status da Jornada
                 </div>
                 <h2 className="text-4xl md:text-5xl font-black text-slate-900 mb-2 tracking-tight">Seu Progresso</h2>
@@ -48,7 +120,7 @@ export function Dashboard({ stats, allBadges, settings, onUpdateSettings }: Dash
                   <span className="text-[10px] font-black uppercase tracking-tighter opacity-50">Nível</span>
                   <span className="text-4xl font-black leading-none">{level}</span>
                 </div>
-                <div className="absolute -bottom-2 -right-2 w-10 h-10 bg-emerald-500 rounded-2xl flex items-center justify-center text-white border-4 border-white shadow-lg animate-bounce">
+                <div className={`absolute -bottom-2 -right-2 w-10 h-10 ${THEMES[sections.progress].primary.replace('text-', 'bg-')} rounded-2xl flex items-center justify-center text-white border-4 border-white shadow-lg animate-bounce`}>
                   <Trophy size={18} />
                 </div>
               </div>
@@ -60,8 +132,8 @@ export function Dashboard({ stats, allBadges, settings, onUpdateSettings }: Dash
                   <span className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Experiência do Nível</span>
                   <div className="text-2xl font-black text-slate-900">{stats.points % 500} <span className="text-slate-300">/ 500 XP</span></div>
                 </div>
-                <div className="text-right">
-                  <div className="text-3xl font-black text-emerald-500">{Math.round(progressToNextLevel)}%</div>
+                <div className="text-right text-left">
+                  <div className={`text-3xl font-black ${THEMES[sections.progress].primary}`}>{Math.round(progressToNextLevel)}%</div>
                 </div>
               </div>
               <div className="h-6 bg-slate-100 rounded-2xl p-1 shadow-inner relative overflow-hidden">
@@ -69,14 +141,14 @@ export function Dashboard({ stats, allBadges, settings, onUpdateSettings }: Dash
                   initial={{ width: 0 }}
                   animate={{ width: `${progressToNextLevel}%` }}
                   transition={{ duration: 1, ease: "easeOut" }}
-                  className="h-full rounded-xl bento-gradient shadow-lg relative overflow-hidden"
+                  className={`h-full rounded-xl ${THEMES[sections.progress].gradient} shadow-lg relative overflow-hidden`}
                 >
                   <div className="absolute inset-0 bg-[linear-gradient(90deg,transparent,rgba(255,255,255,0.3),transparent)] animate-[shimmer_2s_infinite]" />
                 </motion.div>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mt-12 relative z-10">
+            <div className={`grid grid-cols-1 ${layout === 'grid' ? 'sm:grid-cols-3' : 'sm:grid-cols-3'} gap-6 mt-12 relative z-10`}>
               <motion.div 
                 whileHover={{ y: -5 }}
                 className="flex items-center gap-6 p-6 bg-slate-50 rounded-[32px] border border-slate-100 transition-all hover:bg-white hover:shadow-2xl hover:shadow-slate-200/50 group/stat"
@@ -94,7 +166,7 @@ export function Dashboard({ stats, allBadges, settings, onUpdateSettings }: Dash
                 whileHover={{ y: -5 }}
                 className="flex items-center gap-6 p-6 bg-slate-50 rounded-[32px] border border-slate-100 transition-all hover:bg-white hover:shadow-2xl hover:shadow-slate-200/50 group/stat"
               >
-                <div className="w-14 h-14 bg-yellow-100 text-yellow-600 rounded-2xl flex items-center justify-center group-hover/stat:scale-110 group-hover/stat:rotate-12 transition-all">
+                <div className={`w-14 h-14 bg-yellow-100 text-yellow-600 rounded-2xl flex items-center justify-center group-hover/stat:scale-110 group-hover/stat:rotate-12 transition-all`}>
                   <Zap size={28} />
                 </div>
                 <div className="text-left">
@@ -107,7 +179,7 @@ export function Dashboard({ stats, allBadges, settings, onUpdateSettings }: Dash
                 whileHover={{ y: -5 }}
                 className="flex items-center gap-6 p-6 bg-slate-50 rounded-[32px] border border-slate-100 transition-all hover:bg-white hover:shadow-2xl hover:shadow-slate-200/50 group/stat"
               >
-                <div className="w-14 h-14 bg-blue-100 text-blue-600 rounded-2xl flex items-center justify-center group-hover/stat:scale-110 group-hover/stat:rotate-12 transition-all">
+                <div className={`w-14 h-14 ${THEMES[sections.progress].bg} ${THEMES[sections.progress].primary} rounded-2xl flex items-center justify-center group-hover/stat:scale-110 group-hover/stat:rotate-12 transition-all`}>
                   <Star size={28} />
                 </div>
                 <div className="text-left">
@@ -123,13 +195,13 @@ export function Dashboard({ stats, allBadges, settings, onUpdateSettings }: Dash
               <Award size={120} />
             </div>
             
-            <h3 className="text-3xl font-black text-slate-900 mb-8 flex items-center gap-4 relative z-10">
-              <div className="w-10 h-10 bg-emerald-500 rounded-xl flex items-center justify-center text-white shadow-lg shadow-emerald-500/20">
+            <h3 className="text-3xl font-black text-slate-900 mb-8 flex items-center gap-4 relative z-10 text-left">
+              <div className={`w-10 h-10 ${THEMES[sections.achievements].primary.replace('text-', 'bg-')} rounded-xl flex items-center justify-center text-white shadow-lg`}>
                 <Award size={24} />
               </div>
               Suas Medalhas
             </h3>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 relative z-10">
+            <div className={`grid ${layout === 'grid' ? 'grid-cols-2 md:grid-cols-4' : 'grid-cols-2 md:grid-cols-6'} gap-6 relative z-10`}>
               {allBadges.map(badge => {
                 const isUnlocked = stats.badges.includes(badge.id);
                 return (
@@ -144,7 +216,7 @@ export function Dashboard({ stats, allBadges, settings, onUpdateSettings }: Dash
                     } : {}}
                     className={`group relative p-6 rounded-[32px] border text-center transition-all duration-500 ${
                       isUnlocked 
-                        ? 'bg-white border-emerald-100 shadow-lg shadow-emerald-500/5 ring-4 ring-emerald-500/5' 
+                        ? `bg-white ${THEMES[sections.achievements].border} shadow-lg ring-4 ${THEMES[sections.achievements].primary.replace('text-', 'ring-')}/5` 
                         : 'bg-slate-50 border-slate-100 opacity-40 grayscale grayscale-[0.8]'
                     }`}
                   >
@@ -156,7 +228,7 @@ export function Dashboard({ stats, allBadges, settings, onUpdateSettings }: Dash
                         <motion.div 
                           initial={{ scale: 0 }}
                           animate={{ scale: 1 }}
-                          className="absolute -top-1 -right-1 w-5 h-5 bg-emerald-500 rounded-full border-2 border-white flex items-center justify-center"
+                          className={`absolute -top-1 -right-1 w-5 h-5 ${THEMES[sections.achievements].primary.replace('text-', 'bg-')} rounded-full border-2 border-white flex items-center justify-center`}
                         >
                           <Zap size={10} className="text-white" />
                         </motion.div>
@@ -178,94 +250,163 @@ export function Dashboard({ stats, allBadges, settings, onUpdateSettings }: Dash
             </div>
           </div>
 
-          {/* Settings Section */}
-          <div className="bento-card p-6 md:p-10 bg-slate-50">
-            <h3 className="text-2xl font-bold text-slate-900 mb-8 flex items-center gap-3">
-              <Settings className="text-slate-400" />
-              Configurações
-            </h3>
-            <div className="grid md:grid-cols-2 gap-6">
-              <div className="flex items-center justify-between p-6 bg-white rounded-3xl border border-slate-100">
-                <div className="flex gap-4 items-center">
-                  <div className="w-10 h-10 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-600">
-                    <Bell size={20} />
-                  </div>
-                  <div>
-                    <div className="font-bold text-slate-900 text-sm">Lembretes de aula</div>
-                    <div className="text-[10px] text-slate-400 font-medium">Notificar para praticar diariamente</div>
+          {/* Customization & Settings Section */}
+          <div className="bento-card p-6 md:p-10 bg-slate-50 space-y-12">
+            <div>
+              <h3 className="text-2xl font-black text-slate-900 mb-8 flex items-center gap-3 text-left">
+                <Palette className="text-slate-400" />
+                Personalizar Dashboard por Seção
+              </h3>
+              
+              <div className="space-y-8">
+                {/* Layout Style */}
+                <div className="space-y-4">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block text-left">Estilo Geral do Layout</label>
+                  <div className="flex max-w-md gap-3">
+                    <button
+                      onClick={() => updateDashboardSetting('layout', 'grid')}
+                      className={`flex-1 flex items-center justify-center gap-3 p-4 rounded-2xl font-bold transition-all ${
+                        layout === 'grid' 
+                          ? 'bg-slate-900 text-white shadow-lg shadow-slate-900/20' 
+                          : 'bg-white text-slate-500 border border-slate-200 hover:border-slate-300'
+                      }`}
+                    >
+                      <LayoutGrid size={20} /> Grade
+                    </button>
+                    <button
+                      onClick={() => updateDashboardSetting('layout', 'list')}
+                      className={`flex-1 flex items-center justify-center gap-3 p-4 rounded-2xl font-bold transition-all ${
+                        layout === 'list' 
+                          ? 'bg-slate-900 text-white shadow-lg shadow-slate-900/20' 
+                          : 'bg-white text-slate-500 border border-slate-200 hover:border-slate-300'
+                      }`}
+                    >
+                      <List size={20} /> Lista
+                    </button>
                   </div>
                 </div>
-                <button 
-                  onClick={() => toggleSetting('lessonReminders')}
-                  className={`w-12 h-6 rounded-full transition-all relative ${settings.lessonReminders ? 'bg-emerald-500' : 'bg-slate-200'}`}
-                >
-                  <motion.div 
-                    animate={{ x: settings.lessonReminders ? 26 : 4 }}
-                    className="absolute top-1 w-4 h-4 bg-white rounded-full shadow-sm"
-                  />
-                </button>
-              </div>
 
-              <div className="flex items-center justify-between p-6 bg-white rounded-3xl border border-slate-100">
-                <div className="flex gap-4 items-center">
-                  <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center text-blue-600">
-                    <Zap size={20} />
-                  </div>
-                  <div>
-                    <div className="font-bold text-slate-900 text-sm">Novas lições</div>
-                    <div className="text-[10px] text-slate-400 font-medium">Alertar quando houver conteúdo novo</div>
-                  </div>
+                {/* Section Colors */}
+                <div className="grid md:grid-cols-2 gap-8 pt-6 border-t border-slate-200">
+                  {[
+                    { id: 'progress', label: 'Progresso e Atividade' },
+                    { id: 'achievements', label: 'Conquistas e Medalhas' },
+                    { id: 'settings', label: 'Preferências de App' },
+                    { id: 'leaderboard', label: 'Ranking Global' }
+                  ].map((sec) => (
+                    <div key={sec.id} className="space-y-4">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block text-left">Cor: {sec.label}</label>
+                      <div className="flex flex-wrap gap-2">
+                        {Object.keys(THEMES).map((color) => (
+                          <button
+                            key={color}
+                            onClick={() => updateSectionColor(sec.id as any, color)}
+                            className={`w-10 h-10 rounded-xl transition-all relative flex items-center justify-center border-2 ${
+                              sections[sec.id as keyof typeof sections] === color 
+                                ? 'border-slate-900 scale-110 shadow-md' 
+                                : 'border-transparent opacity-60 hover:opacity-100'
+                            }`}
+                            title={color.charAt(0).toUpperCase() + color.slice(1)}
+                          >
+                            <div className={`w-6 h-6 rounded-lg ${color === 'emerald' ? 'bg-emerald-500' : color === 'blue' ? 'bg-blue-500' : color === 'violet' ? 'bg-violet-500' : 'bg-rose-500'}`} />
+                            {sections[sec.id as keyof typeof sections] === color && <div className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-slate-900 rounded-full flex items-center justify-center text-[7px] text-white font-bold">✓</div>}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
                 </div>
-                <button 
-                  onClick={() => toggleSetting('newContentAlerts')}
-                  className={`w-12 h-6 rounded-full transition-all relative ${settings.newContentAlerts ? 'bg-blue-500' : 'bg-slate-200'}`}
-                >
-                  <motion.div 
-                    animate={{ x: settings.newContentAlerts ? 26 : 4 }}
-                    className="absolute top-1 w-4 h-4 bg-white rounded-full shadow-sm"
-                  />
-                </button>
               </div>
+            </div>
 
-              <div className="flex items-center justify-between p-6 bg-white rounded-3xl border border-slate-100">
-                <div className="flex gap-4 items-center">
-                  <div className="w-10 h-10 bg-orange-50 rounded-xl flex items-center justify-center text-orange-600">
-                    <Volume2 size={20} />
+            <div>
+              <h3 className="text-2xl font-bold text-slate-900 mb-8 flex items-center gap-3 border-t border-slate-200 pt-10 text-left">
+                <Settings className="text-slate-400" />
+                Preferências de Aplicativo
+              </h3>
+              <div className="grid md:grid-cols-2 gap-6">
+                <div className="flex items-center justify-between p-6 bg-white rounded-3xl border border-slate-100">
+                  <div className="flex gap-4 items-center">
+                    <div className={`w-10 h-10 ${THEMES[sections.settings].bg} ${THEMES[sections.settings].secondary} rounded-xl flex items-center justify-center`}>
+                      <Bell size={20} />
+                    </div>
+                    <div className="text-left">
+                      <div className="font-bold text-slate-900 text-sm font-bold">Lembretes de aula</div>
+                      <div className="text-[10px] text-slate-400 font-medium font-medium">Notificar para praticar diariamente</div>
+                    </div>
                   </div>
-                  <div>
-                    <div className="font-bold text-slate-900 text-sm">Efeitos Sonoros</div>
-                    <div className="text-[10px] text-slate-400 font-medium">Sons ao completar desafios</div>
-                  </div>
+                  <button 
+                    onClick={() => toggleSetting('lessonReminders')}
+                    className={`w-12 h-6 rounded-full transition-all relative ${settings.lessonReminders ? THEMES[sections.settings].toggleOn : 'bg-slate-200'}`}
+                  >
+                    <motion.div 
+                      animate={{ x: settings.lessonReminders ? 26 : 4 }}
+                      className="absolute top-1 w-4 h-4 bg-white rounded-full shadow-sm"
+                    />
+                  </button>
                 </div>
-                <button 
-                  onClick={() => toggleSetting('soundEnabled')}
-                  className={`w-12 h-6 rounded-full transition-all relative ${settings.soundEnabled ? 'bg-orange-500' : 'bg-slate-200'}`}
-                >
-                  <motion.div 
-                    animate={{ x: settings.soundEnabled ? 26 : 4 }}
-                    className="absolute top-1 w-4 h-4 bg-white rounded-full shadow-sm"
-                  />
-                </button>
+
+                <div className="flex items-center justify-between p-6 bg-white rounded-3xl border border-slate-100">
+                  <div className="flex gap-4 items-center">
+                    <div className={`w-10 h-10 ${THEMES[sections.settings].bg} ${THEMES[sections.settings].secondary} rounded-xl flex items-center justify-center`}>
+                      <Zap size={20} />
+                    </div>
+                    <div className="text-left text-left">
+                      <div className="font-bold text-slate-900 text-sm font-bold">Novas lições</div>
+                      <div className="text-[10px] text-slate-400 font-medium font-medium">Alertar quando houver conteúdo novo</div>
+                    </div>
+                  </div>
+                  <button 
+                    onClick={() => toggleSetting('newContentAlerts')}
+                    className={`w-12 h-6 rounded-full transition-all relative ${settings.newContentAlerts ? THEMES[sections.settings].toggleOn : 'bg-slate-200'}`}
+                  >
+                    <motion.div 
+                      animate={{ x: settings.newContentAlerts ? 26 : 4 }}
+                      className="absolute top-1 w-4 h-4 bg-white rounded-full shadow-sm"
+                    />
+                  </button>
+                </div>
+
+                <div className="flex items-center justify-between p-6 bg-white rounded-3xl border border-slate-100">
+                  <div className="flex gap-4 items-center">
+                    <div className={`w-10 h-10 ${THEMES[sections.settings].bg} ${THEMES[sections.settings].secondary} rounded-xl flex items-center justify-center`}>
+                      <Volume2 size={20} />
+                    </div>
+                    <div className="text-left text-left">
+                      <div className="font-bold text-slate-900 text-sm font-bold">Efeitos Sonoros</div>
+                      <div className="text-[10px] text-slate-400 font-medium font-medium">Sons ao completar desafios</div>
+                    </div>
+                  </div>
+                  <button 
+                    onClick={() => toggleSetting('soundEnabled')}
+                    className={`w-12 h-6 rounded-full transition-all relative ${settings.soundEnabled ? THEMES[sections.settings].toggleOn : 'bg-slate-200'}`}
+                  >
+                    <motion.div 
+                      animate={{ x: settings.soundEnabled ? 26 : 4 }}
+                      className="absolute top-1 w-4 h-4 bg-white rounded-full shadow-sm"
+                    />
+                  </button>
+                </div>
               </div>
             </div>
           </div>
         </div>
 
         {/* Right Column: Leaderboard */}
-        <div className="space-y-8">
+        <div className={`space-y-8 ${layout === 'list' ? 'max-w-xl mx-auto w-full' : ''}`}>
           <div className="bento-card p-6 md:p-10 bg-slate-900 text-white h-full">
-            <h3 className="text-2xl font-bold mb-8 flex items-center gap-3">
+            <h3 className="text-2xl font-bold mb-8 flex items-center gap-3 text-left">
               <Trophy className="text-yellow-400" />
               Ranking Global
             </h3>
             <div className="space-y-6">
               {/* User Position */}
-              <div className="p-4 bg-emerald-600 rounded-2xl flex items-center justify-between border border-emerald-500 shadow-lg scale-105">
+              <div className={`p-4 ${THEMES[sections.leaderboard].leaderboardUser} rounded-2xl flex items-center justify-between border shadow-lg scale-105`}>
                 <div className="flex items-center gap-4">
-                  <div className="w-8 h-8 rounded-full bg-white text-emerald-600 flex items-center justify-center font-bold text-sm">
+                  <div className="w-8 h-8 rounded-full bg-white text-slate-900 flex items-center justify-center font-bold text-sm">
                     6
                   </div>
-                  <div>
+                  <div className="text-left">
                     <div className="font-bold">Você</div>
                     <div className="text-[10px] opacity-80 uppercase font-bold">Nível {level}</div>
                   </div>
@@ -275,7 +416,7 @@ export function Dashboard({ stats, allBadges, settings, onUpdateSettings }: Dash
 
               {MOCK_LEADERBOARD.map((user, i) => (
                 <div key={user.name} className="flex items-center justify-between p-2 border-b border-slate-800 last:border-0 hover:bg-white/5 transition-colors rounded-lg">
-                  <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-4 text-left">
                     <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${
                       i === 0 ? 'bg-yellow-400 text-slate-900' :
                       i === 1 ? 'bg-slate-300 text-slate-900' :
@@ -289,7 +430,7 @@ export function Dashboard({ stats, allBadges, settings, onUpdateSettings }: Dash
                       <div className="text-[10px] text-slate-500 uppercase font-bold">Nível {user.level}</div>
                     </div>
                   </div>
-                  <div className="font-bold text-sm text-emerald-400">{user.points} XP</div>
+                  <div className={`font-bold text-sm ${THEMES[sections.leaderboard].leaderboardPoints}`}>{user.points} XP</div>
                 </div>
               ))}
             </div>
