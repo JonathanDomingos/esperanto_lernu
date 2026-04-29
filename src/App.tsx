@@ -672,7 +672,7 @@ export default function App() {
           <div className="pt-10 border-t border-slate-900 flex flex-col md:flex-row justify-between items-center gap-6 text-[10px] font-black uppercase tracking-[0.1em] md:tracking-[0.2em] text-slate-500">
             <div className="flex flex-wrap items-center justify-center gap-2">
               <span className="bg-emerald-500/10 text-emerald-500 px-2 py-1 rounded">V2.4</span>
-              <span>© 2026 Esperanto Lernu Foundation</span>
+              <span>© 2026 Esperanto Lernu — Desenvolvido por Jonathan Domingos</span>
             </div>
             <div className="text-emerald-500 hover:text-emerald-400 transition-colors italic normal-case text-sm font-medium tracking-normal text-center">
               Jen la lingvo, kiun mi amas.

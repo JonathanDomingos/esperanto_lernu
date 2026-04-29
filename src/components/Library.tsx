@@ -24,10 +24,11 @@ import {
   Link2,
   HelpCircle,
   Map,
-  Utensils
+  Utensils,
+  X
 } from 'lucide-react';
 import { ResourceItem } from '../types';
-import { DICTIONARY } from '../data/dictionary';
+import { DICTIONARY, DictionaryEntry } from '../data/dictionary';
 import Fuse from 'fuse.js';
 
 const RESOURCES: (ResourceItem & { featured?: boolean })[] = [
@@ -200,6 +201,7 @@ export function LibrarySection({ onAddFlashcard, onNavigate }: LibrarySectionPro
   const [view, setView] = useState<'resources' | 'glossary'>('resources');
   const [searchTerm, setSearchTerm] = useState('');
   const [addedWords, setAddedWords] = useState<Set<string>>(new Set());
+  const [selectedEntry, setSelectedEntry] = useState<DictionaryEntry | null>(null);
 
   const fuse = useMemo(() => new Fuse(DICTIONARY, {
     keys: ['word', 'translation', 'category'],
@@ -320,9 +322,10 @@ export function LibrarySection({ onAddFlashcard, onNavigate }: LibrarySectionPro
                     exit={{ opacity: 0, scale: 0.95 }}
                     whileHover={{ y: -5, shadow: '0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)' }}
                     transition={{ delay: idx * 0.05 }}
-                    className={`bento-card p-8 bg-white border transition-all group flex flex-col h-full ${
+                    className={`bento-card p-8 bg-white border transition-all group flex flex-col h-full cursor-pointer ${
                       isAdded ? 'border-emerald-500 bg-emerald-50/10' : 'border-slate-100'
                     }`}
+                    onClick={() => setSelectedEntry(entry)}
                   >
                     <div className="flex justify-between items-start mb-6">
                       <span className={`text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5 px-3 py-1.5 rounded-full transition-colors ${
@@ -332,7 +335,10 @@ export function LibrarySection({ onAddFlashcard, onNavigate }: LibrarySectionPro
                         {entry.category}
                       </span>
                       <button
-                        onClick={() => handleAddSingleFlashcard(entry.word, entry.translation, entry.category)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleAddSingleFlashcard(entry.word, entry.translation, entry.category);
+                        }}
                         disabled={isAdded}
                         className={`p-2.5 rounded-xl transition-all ${
                           isAdded 
@@ -375,16 +381,9 @@ export function LibrarySection({ onAddFlashcard, onNavigate }: LibrarySectionPro
                       </p>
                     </div>
 
-                    <div className="p-5 bg-slate-50/50 rounded-[24px] border border-slate-100 mt-auto group-hover:bg-white group-hover:border-emerald-100 transition-all">
-                      <p className="text-sm italic text-slate-600 mb-2 leading-relaxed">
-                        "{entry.example}"
-                      </p>
-                      <div className="flex items-center gap-2">
-                        <div className="w-1.5 h-1.5 rounded-full bg-slate-300" />
-                        <p className="text-[11px] text-slate-400 font-bold uppercase tracking-wider">
-                          {entry.exampleTranslation}
-                        </p>
-                      </div>
+                    <div className="mt-auto flex items-center justify-between text-[10px] font-black uppercase tracking-widest text-slate-400 group-hover:text-emerald-600 transition-colors">
+                      Ver detalhes
+                      <ExternalLink size={12} strokeWidth={3} />
                     </div>
                   </motion.div>
                 );
@@ -406,6 +405,119 @@ export function LibrarySection({ onAddFlashcard, onNavigate }: LibrarySectionPro
           <Globe size={450} />
         </div>
       </div>
+
+      <AnimatePresence>
+        {selectedEntry && (
+          <GlossaryDetailModal 
+            entry={selectedEntry}
+            onClose={() => setSelectedEntry(null)}
+            onAddFlashcard={handleAddSingleFlashcard}
+            isAdded={addedWords.has(selectedEntry.word)}
+          />
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+function GlossaryDetailModal({ 
+  entry, 
+  onClose, 
+  onAddFlashcard, 
+  isAdded 
+}: { 
+  entry: DictionaryEntry; 
+  onClose: () => void; 
+  onAddFlashcard: (word: string, translation: string, category?: string) => void;
+  isAdded: boolean;
+}) {
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
+      <motion.div 
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        onClick={onClose}
+        className="absolute inset-0 bg-slate-900/60 backdrop-blur-md"
+      />
+      <motion.div
+        layoutId={`card-${entry.word}`}
+        initial={{ opacity: 0, scale: 0.9, y: 20 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.9, y: 20 }}
+        className="relative w-full max-w-lg bg-white rounded-[40px] shadow-2xl overflow-hidden"
+      >
+        <button 
+          onClick={onClose}
+          className="absolute right-6 top-6 p-3 bg-slate-100 hover:bg-slate-200 text-slate-500 rounded-2xl transition-colors z-10"
+        >
+          <X size={20} />
+        </button>
+
+        <div className="p-10">
+          <div className="flex items-center gap-3 mb-8">
+            <div className="w-12 h-12 bg-emerald-100 text-emerald-600 rounded-2xl flex items-center justify-center font-black text-xl">
+              {entry.word[0].toUpperCase()}
+            </div>
+            <div>
+              <span className="text-[10px] font-black uppercase tracking-widest text-emerald-600">
+                {entry.category}
+              </span>
+              <h2 className="text-3xl font-black text-slate-900 leading-tight">
+                {entry.word}
+              </h2>
+            </div>
+          </div>
+
+          <div className="space-y-8">
+            <div>
+              <p className="text-xs font-black uppercase tracking-widest text-slate-400 mb-2">Tradução</p>
+              <p className="text-2xl font-bold text-slate-700">{entry.translation}</p>
+            </div>
+
+            <div className="p-8 bg-slate-50 rounded-[32px] border border-slate-100 italic">
+              <p className="text-xs font-black uppercase tracking-widest text-slate-400 mb-4 not-italic">Exemplo de Uso</p>
+              <p className="text-xl text-slate-800 mb-3">"{entry.example}"</p>
+              <div className="flex items-center gap-2">
+                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                <p className="text-sm font-bold text-emerald-600 uppercase tracking-wide">
+                  {entry.exampleTranslation}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-10 pt-10 border-t border-slate-100">
+            <button
+              onClick={() => {
+                if (!isAdded) {
+                  onAddFlashcard(entry.word, entry.translation, entry.category);
+                }
+              }}
+              disabled={isAdded}
+              className={`w-full py-6 rounded-3xl font-black text-xl transition-all flex items-center justify-center gap-4 shadow-xl ${
+                isAdded 
+                  ? 'bg-slate-100 text-slate-400 cursor-not-allowed' 
+                  : 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-emerald-600/20 active:scale-95'
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                {isAdded ? (
+                  <>
+                    <Check size={28} strokeWidth={3} />
+                    <span>Já nos Flashcards</span>
+                  </>
+                ) : (
+                  <>
+                    <Plus size={28} strokeWidth={3} />
+                    <span>Adicionar aos Flashcards</span>
+                  </>
+                )}
+              </div>
+            </button>
+          </div>
+        </div>
+      </motion.div>
     </div>
   );
 }

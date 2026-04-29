@@ -171,11 +171,7 @@ export function Hero({ onStart, onNavigate, stats }: HeroProps) {
             </div>
           </div>
           
-          <div className="absolute top-6 right-6">
-            <div className="bg-emerald-50 text-emerald-600 text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full flex items-center gap-1 shadow-sm border border-emerald-100">
-              <Zap size={10} className="fill-current" /> Meta
-            </div>
-          </div>
+
         </motion.div>
 
         {/* Resources Card */}
