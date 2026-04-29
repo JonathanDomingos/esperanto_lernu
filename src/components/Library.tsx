@@ -11,6 +11,7 @@ import {
   LayoutGrid, 
   List, 
   Plus,
+  Check,
   MessageSquare,
   User,
   Hash,
@@ -340,13 +341,28 @@ export function LibrarySection({ onAddFlashcard, onNavigate }: LibrarySectionPro
                         }`}
                         title={isAdded ? "Já está nos seus Flashcards" : "Adicionar aos meus Flashcards"}
                       >
-                        {isAdded ? (
-                          <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }}>
-                            <Sparkles size={18} />
-                          </motion.div>
-                        ) : (
-                          <Plus size={18} />
-                        )}
+                        <AnimatePresence mode="wait">
+                          {isAdded ? (
+                            <motion.div 
+                              key="check"
+                              initial={{ scale: 0, rotate: -45 }} 
+                              animate={{ scale: 1, rotate: 0 }}
+                              transition={{ type: "spring", damping: 12 }}
+                              className="flex items-center justify-center"
+                            >
+                              <Check size={18} strokeWidth={3} />
+                            </motion.div>
+                          ) : (
+                            <motion.div 
+                              key="plus"
+                              initial={{ opacity: 0 }}
+                              animate={{ opacity: 1 }}
+                              exit={{ opacity: 0 }}
+                            >
+                              <Plus size={18} />
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
                       </button>
                     </div>
 

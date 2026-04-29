@@ -1,5 +1,5 @@
 export interface LessonPart {
-  type: 'text' | 'question' | 'example' | 'image' | 'icon' | 'combine';
+  type: 'text' | 'question' | 'example' | 'image' | 'icon' | 'combine' | 'affix-explorer';
   content: string;
   options?: string[];
   correctAnswer?: string;

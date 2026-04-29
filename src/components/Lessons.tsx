@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
+import { GoogleGenAI, Type } from "@google/genai";
 import { 
   ChevronLeft, 
   ChevronRight, 
@@ -31,7 +32,8 @@ import {
   Trophy,
   Share2,
   Search,
-  X
+  X,
+  Sparkles
 } from 'lucide-react';
 
 import { soundService } from '../services/soundService';
@@ -161,6 +163,187 @@ function InteractiveText({ text }: { text: string }) {
     </div>
   );
 }
+function AffixExplorer() {
+  const [selectedAffix, setSelectedAffix] = useState<string | null>(null);
+  const [explanation, setExplanation] = useState<string | null>(null);
+  const [examples, setExamples] = useState<{ original: string, modified: string, meaning: string }[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const affixes = [
+    { code: 'mal-', type: 'prefix', label: 'mal-' },
+    { code: '-in-', type: 'suffix', label: '-in-' },
+    { code: '-eg-', type: 'suffix', label: '-eg-' },
+    { code: '-et-', type: 'suffix', label: '-et-' },
+    { code: '-ar-', type: 'suffix', label: '-ar-' },
+    { code: '-ilo', type: 'suffix', label: '-ilo' },
+    { code: 're-', type: 'prefix', label: 're-' },
+    { code: 'ge-', type: 'prefix', label: 'ge-' },
+    { code: '-ejo', type: 'suffix', label: '-ejo' },
+    { code: '-isto', type: 'suffix', label: '-isto' },
+    { code: '-aĵ-', type: 'suffix', label: '-aĵ-' },
+    { code: '-ind-', type: 'suffix', label: '-ind-' }
+  ];
+
+  const exploreAffix = async (affix: string) => {
+    setSelectedAffix(affix);
+    setIsLoading(true);
+    setError(null);
+    setExplanation(null);
+    setExamples([]);
+
+    try {
+      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+      const response = await ai.models.generateContent({
+        model: "gemini-3-flash-preview",
+        contents: `Você é um professor especialista em Esperanto.
+        Explique detalhadamente o funcionamento e a lógica do afixo "${affix}".
+        A explicação deve ser em português (Brasil), didática e profunda.
+        Forneça 3 exemplos práticos e claros de palavras antes e depois do afixo.
+        
+        Siga estritamente o formato JSON.`,
+        config: {
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+              explanation: { 
+                type: Type.STRING, 
+                description: "Uma explicação detalhada e pedagógica em português do Brasil sobre o afixo." 
+              },
+              examples: {
+                type: Type.ARRAY,
+                description: "Três exemplos de aplicação do afixo.",
+                items: {
+                  type: Type.OBJECT,
+                  properties: {
+                    original: { type: Type.STRING, description: "A palavra raiz original (ex: Domo)" },
+                    modified: { type: Type.STRING, description: "A palavra com o afixo aplicado (ex: Domego)" },
+                    meaning: { type: Type.STRING, description: "O significado da palavra modificada (ex: Casarão)" }
+                  },
+                  required: ["original", "modified", "meaning"]
+                }
+              }
+            },
+            required: ["explanation", "examples"]
+          }
+        }
+      });
+
+      const text = response.text;
+      if (!text) {
+        throw new Error("A IA retornou uma resposta vazia.");
+      }
+
+      const data = JSON.parse(text.trim());
+      setExplanation(data.explanation);
+      setExamples(data.examples);
+    } catch (err) {
+      console.error("Erro na AffixExplorer:", err);
+      setError("Houve um problema ao consultar o Mestre de IA. Por favor, tente novamente.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <div className="space-y-8 py-4">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        {affixes.map((affix) => (
+          <button
+            key={affix.code}
+            onClick={() => exploreAffix(affix.code)}
+            className={`p-4 rounded-2xl border-2 font-black text-xl transition-all active:scale-95 ${
+              selectedAffix === affix.code
+                ? 'bg-emerald-600 border-emerald-600 text-white shadow-xl shadow-emerald-600/20'
+                : 'bg-white border-slate-100 hover:border-emerald-500 hover:bg-emerald-50 text-slate-900'
+            }`}
+          >
+            {affix.label}
+          </button>
+        ))}
+      </div>
+
+      <AnimatePresence mode="wait">
+        {isLoading ? (
+          <motion.div
+            key="loading"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="p-8 bg-slate-50 rounded-3xl border border-slate-200 flex flex-col items-center gap-4"
+          >
+            <div className="w-12 h-12 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+            <p className="font-bold text-slate-500">Consultando a IA para detalhes sobre "{selectedAffix}"...</p>
+          </motion.div>
+        ) : error ? (
+          <motion.div
+            key="error"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="p-8 bg-red-50 rounded-3xl border border-red-200 text-red-600 flex flex-col items-center gap-4 text-center"
+          >
+            <AlertCircle size={40} />
+            <p className="font-bold">{error}</p>
+            <button 
+              onClick={() => exploreAffix(selectedAffix!)}
+              className="px-6 py-2 bg-red-600 text-white rounded-xl font-bold"
+            >
+              Tentar Novamente
+            </button>
+          </motion.div>
+        ) : selectedAffix && explanation ? (
+          <motion.div
+            key="content"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="p-8 bg-emerald-50 rounded-3xl border border-emerald-100 space-y-6"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-emerald-500 rounded-xl flex items-center justify-center text-white">
+                <Sparkles size={20} />
+              </div>
+              <h3 className="text-2xl font-black text-emerald-900">Mergulho em "{selectedAffix}"</h3>
+            </div>
+
+            <p className="text-emerald-800 font-medium leading-relaxed bg-white/50 p-4 rounded-2xl">
+              {explanation}
+            </p>
+
+            <div className="space-y-3">
+              <p className="text-xs font-black text-emerald-600 uppercase tracking-widest pl-1">Exemplos Gerados pela IA</p>
+              <div className="grid gap-3">
+                {examples.map((ex, i) => (
+                  <div key={i} className="flex items-center justify-between p-4 bg-white rounded-2xl border border-emerald-100 shadow-sm group hover:shadow-md transition-shadow">
+                    <div className="flex items-center gap-4">
+                      <span className="text-slate-400 font-bold line-through group-hover:text-red-300 transition-colors">{ex.original}</span>
+                      <ChevronRight size={16} className="text-emerald-300" />
+                      <span className="text-emerald-600 font-black text-xl">{ex.modified}</span>
+                    </div>
+                    <span className="text-slate-600 font-bold italic">{ex.meaning}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </motion.div>
+        ) : (
+          <motion.div
+            key="placeholder"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="p-12 border-2 border-dashed border-slate-200 rounded-3xl text-center space-y-4"
+          >
+            <div className="w-16 h-16 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-300 mx-auto">
+              <Zap size={32} />
+            </div>
+            <p className="text-slate-400 font-bold">Clique em um afixo acima para explorar seu poder com ajuda da IA.</p>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
 import { Lesson, LessonPart } from '../types';
 
 const MANUAL_LESSONS: Lesson[] = [
@@ -194,6 +377,8 @@ const MANUAL_LESSONS: Lesson[] = [
     parts: [
       { type: 'icon', content: 'Lógica Pura', iconName: 'zap' },
       { type: 'text', content: 'No Esperanto, a terminação das palavras revela sua função gramatical. É como uma etiqueta que diz o que a palavra é.' },
+      { type: 'text', content: 'Um recurso muito comum e poderoso é o prefixo "Mal-", que inverte o sentido da palavra, criando o oposto perfeito.' },
+      { type: 'example', content: '"Bona" (Bom) -> "Malbona" (Mau). "Granda" (Grande) -> "Malgranda" (Pequeno).' },
       { type: 'text', content: 'Todos os substantivos (nomes de seres, objetos, ideias) terminam em -o. Ex: "Hundo" (Cão), "Amiko" (Amigo).' },
       { type: 'example', content: '"Domo" (Casa), "Libro" (Livro), "Tablo" (Mesa), "Knabo" (Menino).' },
       { type: 'question', content: 'Qual dessas palavras é obrigatoriamente um substantivo?', options: ['Bela', 'Kuri', 'Tablo'], correctAnswer: 'Tablo', explanation: 'Apenas "Tablo" termina em -o, indicando um objeto (mesa).' },
@@ -322,7 +507,8 @@ const MANUAL_LESSONS: Lesson[] = [
       { type: 'text', content: 'Sufixos -eg- e -et-: Intensidade (Aumentativo e Diminutivo).' },
       { type: 'example', content: '"Domo" (Casa) -> "Domego" (Casarão) / "Dometo" (Casinha).' },
       { type: 'question', content: 'Qual seria uma "Menininha"? (Knabo = Menino)', options: ['Knabineto', 'Knabinego', 'Malknabino'], correctAnswer: 'Knabineto', explanation: 'Knab- (raiz) + -in- (feminino) + -et- (diminutivo) + -o (substantivo).' },
-      { type: 'question', content: 'O que significa "Varmega"? (Varma = Quente)', options: ['Frio', 'Morno', 'Muito quente'], correctAnswer: 'Muito quente', explanation: '-eg- aumenta a intensidade.' }
+      { type: 'question', content: 'O que significa "Varmega"? (Varma = Quente)', options: ['Frio', 'Morno', 'Muito quente'], correctAnswer: 'Muito quente', explanation: '-eg- aumenta a intensidade.' },
+      { type: 'affix-explorer', content: 'Explore outros afixos poderosos e veja como eles funcionam com a ajuda da IA.' }
     ]
   },
   {
@@ -655,71 +841,141 @@ interface LessonsProps {
 
 interface GrammarQuizQuestion {
   id: string;
-  topic: 'substantivo' | 'verbo' | 'adjetivo' | 'acusativo' | 'plural';
+  topic: string;
   question: string;
   options: string[];
   correctAnswer: string;
   explanation: string;
 }
 
-const GRAMMAR_QUIZ_QUESTIONS: GrammarQuizQuestion[] = [
-  {
-    id: 'q1',
-    topic: 'substantivo',
-    question: 'Qual é o sufixo correto para todos os substantivos no Esperanto?',
-    options: ['-a', '-o', '-e', '-as'],
-    correctAnswer: '-o',
-    explanation: 'Em Esperanto, todos os nomes de coisas, seres e conceitos (substantivos) terminam obrigatoriamente com a letra -o.'
-  },
-  {
-    id: 'q2',
-    topic: 'adjetivo',
-    question: 'Como transformamos a palavra "Amiko" (amigo) em "Amigável"?',
-    options: ['Amikoj', 'Amikon', 'Amika', 'Amike'],
-    correctAnswer: 'Amika',
-    explanation: 'Substituímos o -o (substantivo) pelo -a para criar um adjetivo (qualidade).'
-  },
-  {
-    id: 'q3',
-    topic: 'verbo',
-    question: 'Qual terminação indica que uma ação está ocorrendo AGORA (Presente)?',
-    options: ['-is', '-os', '-us', '-as'],
-    correctAnswer: '-as',
-    explanation: '-as é o sufixo para o tempo presente. Ex: Mi manĝas (Eu como).'
-  },
-  {
-    id: 'q4',
-    topic: 'plural',
-    question: 'Como dizemos "Belas casas" em Esperanto? (Domo = Casa, Bela = Belo)',
-    options: ['Belaj domo', 'Bela domoj', 'Belaj domoj', 'Bela domojn'],
-    correctAnswer: 'Belaj domoj',
-    explanation: 'O plural -j deve ser aplicado tanto ao substantivo quanto ao adjetivo que o qualifica.'
-  },
-  {
-    id: 'q5',
-    topic: 'acusativo',
-    question: 'Na frase "A hundo vidas la katon", quem é o objeto direto (quem está sendo visto)?',
-    options: ['La hundo', 'La katon', 'Ambos', 'Ninguém'],
-    correctAnswer: 'La katon',
-    explanation: 'O sufixo -n marca o acusativo, indicando que o gato é o receptor da ação de ver.'
-  },
-  {
-    id: 'q6',
-    topic: 'verbo',
-    question: 'Qual é a terminação para o futuro?',
-    options: ['-is', '-as', '-os', '-u'],
-    correctAnswer: '-os',
-    explanation: 'O sufixo -os indica ações que ainda acontecerão.'
-  },
-  {
-    id: 'q7',
-    topic: 'verbo',
-    question: 'Se "Lerni" é aprender, como se diz "Eu aprendi" (passado)?',
-    options: ['Mi lernas', 'Mi lernis', 'Mi lernos', 'Mi lernu'],
-    correctAnswer: 'Mi lernis',
-    explanation: '-is é o sufixo universal para o passado.'
-  }
-];
+const GRAMMAR_QUIZ_BY_LEVEL: Record<'beginner' | 'intermediate' | 'advanced', GrammarQuizQuestion[]> = {
+  beginner: [
+    {
+      id: 'beg_q1',
+      topic: 'Substantivo',
+      question: 'Qual é o sufixo correto para todos os substantivos no Esperanto?',
+      options: ['-a', '-o', '-e', '-as'],
+      correctAnswer: '-o',
+      explanation: 'Em Esperanto, todos os nomes de coisas, seres e conceitos (substantivos) terminam obrigatoriamente com a letra -o.'
+    },
+    {
+      id: 'beg_q2',
+      topic: 'Verbo',
+      question: 'Qual terminação indica que uma ação está ocorrendo AGORA (Presente)?',
+      options: ['-is', '-os', '-us', '-as'],
+      correctAnswer: '-as',
+      explanation: '-as é o sufixo para o tempo presente. Ex: Mi manĝas (Eu como).'
+    },
+    {
+      id: 'beg_q3',
+      topic: 'Adjetivo',
+      question: 'Como transformamos a palavra "Amiko" (amigo) em "Amigável"?',
+      options: ['Amikoj', 'Amikon', 'Amika', 'Amike'],
+      correctAnswer: 'Amika',
+      explanation: 'Substituímos o -o (substantivo) pelo -a para criar um adjetivo (qualidade).'
+    },
+    {
+      id: 'beg_q4',
+      topic: 'Acusativo',
+      question: 'Na frase "La hundo vidas la katon", quem é o objeto direto (quem está sendo visto)?',
+      options: ['La hundo', 'La katon', 'Ambos', 'Ninguém'],
+      correctAnswer: 'La katon',
+      explanation: 'O sufixo -n marca o acusativo, indicando que o gato é o receptor da ação de ver.'
+    },
+    {
+      id: 'beg_q5',
+      topic: 'Plural',
+      question: 'Como dizemos "Belas casas" em Esperanto? (Domo = Casa, Bela = Belo)',
+      options: ['Belaj domo', 'Bela domoj', 'Belaj domoj', 'Bela domojn'],
+      correctAnswer: 'Belaj domoj',
+      explanation: 'O plural -j deve ser aplicado tanto ao substantivo quanto ao adjetivo que o qualifica.'
+    }
+  ],
+  intermediate: [
+    {
+      id: 'int_q1',
+      topic: 'Afixos',
+      question: 'Qual prefixo inverte totalmente o sentido de uma palavra?',
+      options: ['re-', 'ge-', 'mal-', 'bo-'],
+      correctAnswer: 'mal-',
+      explanation: 'mal- cria o oposto perfeito. Ex: Bona (bom) -> Malbona (mau).'
+    },
+    {
+      id: 'int_q2',
+      topic: 'Pronomes',
+      question: 'Como se diz "Nosso" em Esperanto? (Ni = Nós)',
+      options: ['Nia', 'Nio', 'Nie', 'Nis'],
+      correctAnswer: 'Nia',
+      explanation: 'Adicionamos a terminação de adjetivo -a aos pronomes para indicar posse.'
+    },
+    {
+      id: 'int_q3',
+      topic: 'Sufixos',
+      question: 'Qual o sufixo para o gênero feminino?',
+      options: ['-ist-', '-in-', '-ej-', '-ar-'],
+      correctAnswer: '-in-',
+      explanation: '-in- é o sufixo feminino. Ex: Patro (pai) -> Patrino (mãe).'
+    },
+    {
+      id: 'int_q4',
+      topic: 'Aumentativo',
+      question: 'Se "Domo" é casa, como seria "Casarão"?',
+      options: ['Dometo', 'Domejo', 'Domego', 'Domisto'],
+      correctAnswer: 'Domego',
+      explanation: '-eg- intensifica o sentido (aumentativo).'
+    },
+    {
+      id: 'int_q5',
+      topic: 'Advérbios',
+      question: 'Como se diz "Rapidamente" vindo de "Rapida" (Rápido)?',
+      options: ['Rapido', 'Rapidas', 'Rapide', 'Rapidaj'],
+      correctAnswer: 'Rapide',
+      explanation: 'A terminação -e indica advérbios (modo).'
+    }
+  ],
+  advanced: [
+    {
+      id: 'adv_q1',
+      topic: 'Correlativos',
+      question: 'Qual correlativo significa "Ninguém"?',
+      options: ['Nenio', 'Nenie', 'Neniu', 'Neniam'],
+      correctAnswer: 'Neniu',
+      explanation: 'Neni- (nada) + -u (indivíduo) = Neniu (ninguém).'
+    },
+    {
+      id: 'adv_q2',
+      topic: 'Correlativos',
+      question: 'Qual o significado de "Kiam"?',
+      options: ['Onde', 'Quando', 'Como', 'Por que'],
+      correctAnswer: 'Quando',
+      explanation: 'Ki- (pergunta) + -am (tempo) = Kiam (quando).'
+    },
+    {
+      id: 'adv_q3',
+      topic: 'Sufixos Especiais',
+      question: 'Qual sufixo indica um lugar ou estabelecimento?',
+      options: ['-aĵo', '-ilo', '-ejo', '-aro'],
+      correctAnswer: '-ejo',
+      explanation: '-ejo indica local. Ex: Lernejo (escola), Vendejo (loja).'
+    },
+    {
+      id: 'adv_q4',
+      topic: 'Particípios',
+      question: 'O que significa o sufixo -isto?',
+      options: ['Possibilidade', 'Profissão/Ocupação', 'Coletivo', 'Ferramenta'],
+      correctAnswer: 'Profissão/Ocupação',
+      explanation: '-isto indica quem exerce habitualmente uma atividade. Ex: Dentisto, Artisto.'
+    },
+    {
+      id: 'adv_q5',
+      topic: 'Correlativos',
+      question: 'O que significa "Ĉie"?',
+      options: ['Tudo', 'Sempre', 'Em todo lugar', 'Todos'],
+      correctAnswer: 'Em todo lugar',
+      explanation: 'Ĉi- (todo) + -e (lugar) = Ĉie (em todo lugar).'
+    }
+  ]
+};
 
 const VERB_PRACTICE_QUESTIONS: GrammarQuizQuestion[] = [
   {
@@ -880,6 +1136,10 @@ export function Lessons({
     }
   };
 
+  const currentLevelQuestions = useMemo(() => {
+    return GRAMMAR_QUIZ_BY_LEVEL[selectedLevel] || GRAMMAR_QUIZ_BY_LEVEL.beginner;
+  }, [selectedLevel]);
+
   const resetQuiz = () => {
     setQuizIndex(0);
     setQuizScore(0);
@@ -890,7 +1150,7 @@ export function Lessons({
   };
 
   const handleNextQuiz = () => {
-    if (quizIndex < GRAMMAR_QUIZ_QUESTIONS.length - 1) {
+    if (quizIndex < currentLevelQuestions.length - 1) {
       setQuizIndex(quizIndex + 1);
       setSelectedOption(null);
       setIsCorrect(null);
@@ -901,7 +1161,7 @@ export function Lessons({
   };
 
   const checkQuizAnswer = (option: string) => {
-    const question = GRAMMAR_QUIZ_QUESTIONS[quizIndex];
+    const question = currentLevelQuestions[quizIndex];
     setSelectedOption(option);
     const correct = option === question.correctAnswer;
     setIsCorrect(correct);
@@ -954,7 +1214,7 @@ export function Lessons({
 
       // Logic for Grammar Quiz
       if (isQuizMode && !quizFinished) {
-        const question = GRAMMAR_QUIZ_QUESTIONS[quizIndex];
+        const question = currentLevelQuestions[quizIndex];
         const options = question.options;
 
         if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
@@ -1065,8 +1325,8 @@ export function Lessons({
   }, [selectedLevel, isOnline, downloadedLessons, searchQuery]);
 
   if (isQuizMode) {
-    const question = GRAMMAR_QUIZ_QUESTIONS[quizIndex];
-    const progress = ((quizIndex + 1) / GRAMMAR_QUIZ_QUESTIONS.length) * 100;
+    const question = currentLevelQuestions[quizIndex];
+    const progress = ((quizIndex + 1) / currentLevelQuestions.length) * 100;
 
     return (
       <div ref={lessonContainerRef} className="max-w-4xl mx-auto px-6 py-12">
@@ -1082,7 +1342,7 @@ export function Lessons({
             <span>Sair do Desafio</span>
           </button>
           <div className="text-sm font-black text-emerald-600 uppercase tracking-widest bg-emerald-50 px-4 py-2 rounded-xl">
-            Desafio Gramatical
+            Desafio {selectedLevel === 'beginner' ? 'Iniciante' : selectedLevel === 'intermediate' ? 'Intermediário' : 'Avançado'}
           </div>
         </div>
 
@@ -1101,7 +1361,7 @@ export function Lessons({
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-black uppercase tracking-widest text-emerald-600">
-                        Questão {quizIndex + 1} de {GRAMMAR_QUIZ_QUESTIONS.length}
+                        Questão {quizIndex + 1} de {currentLevelQuestions.length}
                       </span>
                       <div className="flex-grow mx-8 h-1 bg-slate-100 rounded-full relative overflow-hidden">
                         <motion.div 
@@ -1178,7 +1438,7 @@ export function Lessons({
                           : 'bg-slate-900 text-white hover:bg-emerald-700 shadow-xl'
                       }`}
                     >
-                      {quizIndex === GRAMMAR_QUIZ_QUESTIONS.length - 1 ? 'Finalizar Desafio' : 'Próxima Questão'}
+                      {quizIndex === currentLevelQuestions.length - 1 ? 'Finalizar Desafio' : 'Próxima Questão'}
                       <ChevronRight size={20} className="ml-2" />
                     </button>
                   </div>
@@ -1193,7 +1453,7 @@ export function Lessons({
                     <Trophy size={48} />
                   </div>
                   <h2 className="text-5xl font-black text-slate-900 mb-4">Desafio Concluído!</h2>
-                  <p className="text-xl text-slate-500 mb-10">Você acertou {quizScore} de {GRAMMAR_QUIZ_QUESTIONS.length} questões gramaticais.</p>
+                  <p className="text-xl text-slate-500 mb-10">Você acertou {quizScore} de {currentLevelQuestions.length} questões gramaticais.</p>
                   
                   <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
                     <button
@@ -1556,14 +1816,24 @@ export function Lessons({
                     </div>
                   </div>
 
-                <h2 className="text-4xl font-bold text-slate-900 leading-tight">
-                  {part.type === 'question' ? 'Teste seu conhecimento' : (
-                    <div className="flex flex-col gap-1">
-                      <span className="text-xs uppercase tracking-[0.2em] font-black text-emerald-500 mb-2">Lição Selecionada</span>
-                      {selectedLesson.title}
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2">
+                    <div className="p-2 bg-emerald-50 rounded-xl text-emerald-600 shadow-sm">
+                      <Book size={18} />
                     </div>
-                  )}
-                </h2>
+                    <div className="flex flex-col">
+                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] leading-none mb-1">Lição Atual</span>
+                      <span className="text-sm font-bold text-emerald-700 leading-none">{selectedLesson.title}</span>
+                    </div>
+                  </div>
+
+                  <h2 className="text-4xl font-black text-slate-900 leading-tight">
+                    {part.type === 'question' ? 'Desafio Prático' : 
+                     part.type === 'combine' ? 'Complete a Sentença' : 
+                     part.type === 'example' ? 'Exemplo de Uso' : 
+                     part.type === 'icon' ? 'Conceito Chave' : 'Explicação'}
+                  </h2>
+                </div>
 
                 <div className="text-xl text-slate-600 leading-relaxed font-medium flex justify-between items-start gap-4">
                   <span>
@@ -1660,6 +1930,10 @@ export function Lessons({
                       ))}
                     </div>
                   </div>
+                )}
+
+                {part.type === 'affix-explorer' && (
+                  <AffixExplorer />
                 )}
 
                 {part.type === 'question' && (
@@ -1846,26 +2120,42 @@ export function Lessons({
                     </span>
                   </div>
                   <h3 className="text-4xl md:text-5xl font-black text-white leading-none tracking-tight">
-                    Mestre da <br />
-                    <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-blue-400">Gramática</span>
+                    {selectedLevel === 'beginner' ? 'Desafio' : selectedLevel === 'intermediate' ? 'Missão' : 'Mestre'} <br />
+                    <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-blue-400">
+                      {selectedLevel === 'beginner' ? 'Iniciante' : selectedLevel === 'intermediate' ? 'Intermediária' : 'Avançado'}
+                    </span>
                   </h3>
                   <p className="text-slate-400 text-lg font-medium leading-relaxed max-w-sm">
-                    Um teste rápido cobrindo as 16 regras fundamentais. Você está pronto para validar seu progresso?
+                    {selectedLevel === 'beginner' 
+                      ? 'Um teste rápido cobrindo as regras fundamentais de substantivos, adjetivos e verbos.'
+                      : selectedLevel === 'intermediate'
+                        ? 'Teste seu poder de síntese com prefixos, sufixos e a lógica de pronomes.'
+                        : 'O desafio final: domine os correlativos e afixos complexos que dão alma ao Esperanto.'}
                   </p>
                   <div className="flex items-center gap-4 pt-4">
                     <div className="h-14 px-8 bg-white text-slate-900 rounded-2xl font-black flex items-center gap-3 group-hover:scale-105 transition-transform">
-                      Começar Agora
+                      {completedLessons.length > 5 ? 'Continuar Desafio' : 'Começar Agora'}
                       <ChevronRight size={20} className="text-emerald-600" />
                     </div>
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
-                  {[
+                  {(selectedLevel === 'beginner' ? [
                     { label: 'Substantivos', icon: 'O', color: 'bg-emerald-500' },
                     { label: 'Adjetivos', icon: 'A', color: 'bg-blue-500' },
                     { label: 'Verbos', icon: 'AS', color: 'bg-purple-500' },
                     { label: 'Acusativo', icon: 'N', color: 'bg-orange-500' },
-                  ].map((stat, i) => (
+                  ] : selectedLevel === 'intermediate' ? [
+                    { label: 'Prefixos', icon: 'MAL', color: 'bg-red-500' },
+                    { label: 'Feminino', icon: 'IN', color: 'bg-pink-500' },
+                    { label: 'Posse', icon: 'IA', color: 'bg-indigo-500' },
+                    { label: 'Advérbios', icon: 'E', color: 'bg-teal-500' },
+                  ] : [
+                    { label: 'Correlativos', icon: 'KI', color: 'bg-purple-600' },
+                    { label: 'Lugares', icon: 'EJO', color: 'bg-cyan-500' },
+                    { label: 'Profissões', icon: 'ISTO', color: 'bg-yellow-600' },
+                    { label: 'Contrários', icon: 'RE', color: 'bg-emerald-600' },
+                  ]).map((stat, i) => (
                     <div key={i} className="bg-slate-800/40 border border-slate-700/50 p-6 rounded-3xl backdrop-blur-sm">
                       <div className={`w-10 h-10 ${stat.color} rounded-xl flex items-center justify-center text-white font-black mb-3 text-xs`}>
                         {stat.icon}
