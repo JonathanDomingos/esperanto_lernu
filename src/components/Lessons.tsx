@@ -33,7 +33,8 @@ import {
   Share2,
   Search,
   X,
-  Sparkles
+  Sparkles,
+  BookOpen
 } from 'lucide-react';
 
 import { soundService } from '../services/soundService';
@@ -164,185 +165,423 @@ function InteractiveText({ text }: { text: string }) {
   );
 }
 function AffixExplorer() {
-  const [selectedAffix, setSelectedAffix] = useState<string | null>(null);
+  const [selectedRoot, setSelectedRoot] = useState<string>('san');
+  const [selectedPrefixes, setSelectedPrefixes] = useState<string[]>(['mal']);
+  const [selectedSuffixes, setSelectedSuffixes] = useState<string[]>(['ul', 'ej']);
+  const [ending, setEnding] = useState<string>('o');
+  
   const [explanation, setExplanation] = useState<string | null>(null);
-  const [examples, setExamples] = useState<{ original: string, modified: string, meaning: string }[]>([]);
+  const [compoundMeaning, setCompoundMeaning] = useState<string | null>(null);
+  const [aiBreakdown, setAiBreakdown] = useState<{step: string, added: string, concept: string}[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const affixes = [
-    { code: 'mal-', type: 'prefix', label: 'mal-' },
-    { code: '-in-', type: 'suffix', label: '-in-' },
-    { code: '-eg-', type: 'suffix', label: '-eg-' },
-    { code: '-et-', type: 'suffix', label: '-et-' },
-    { code: '-ar-', type: 'suffix', label: '-ar-' },
-    { code: '-ilo', type: 'suffix', label: '-ilo' },
-    { code: 're-', type: 'prefix', label: 're-' },
-    { code: 'ge-', type: 'prefix', label: 'ge-' },
-    { code: '-ejo', type: 'suffix', label: '-ejo' },
-    { code: '-isto', type: 'suffix', label: '-isto' },
-    { code: '-aĵ-', type: 'suffix', label: '-aĵ-' },
-    { code: '-ind-', type: 'suffix', label: '-ind-' }
+  const presets = [
+    { name: 'Hospital', word: { root: 'san', prefixes: ['mal'], suffixes: ['ul', 'ej'], ending: 'o' } },
+    { name: 'Bibliotecária', word: { root: 'vort', prefixes: [], suffixes: ['ar', 'ist', 'in'], ending: 'o' } },
+    { name: 'Ferramenta de Limpeza', word: { root: 'pur', prefixes: [], suffixes: ['ig', 'il'], ending: 'o' } },
   ];
 
-  const exploreAffix = async (affix: string) => {
-    setSelectedAffix(affix);
+  const roots = [
+    { code: 'san', label: 'san (saúde)', description: 'Raiz para saúde' },
+    { code: 'lern', label: 'lern (aprender)', description: 'Raiz para estudos' },
+    { code: 'labor', label: 'labor (trabalho)', description: 'Raiz para ação' },
+    { code: 'vort', label: 'vort (palavra)', description: 'Raiz para léxico' },
+    { code: 'pur', label: 'pur (limpo)', description: 'Raiz para estado' },
+    { code: 'bel', label: 'bel (belo)', description: 'Raiz para estética' },
+  ];
+
+  const prefixes = [
+    { code: 'mal', label: 'mal-', description: 'Oposto/Antônimo' },
+    { code: 're', label: 're-', description: 'Repetição' },
+    { code: 'ge', label: 'ge-', description: 'Ambos os sexos/Coletivo' },
+    { code: 'pra', label: 'pra-', description: 'Ancestral/Primitivo' },
+    { code: 'bo', label: 'bo-', description: 'Parentesco por afinidade' },
+  ];
+
+  const suffixes = [
+    { code: 'ul', label: '-ul-', description: 'Pessoa com tal característica' },
+    { code: 'ej', label: '-ej-', description: 'Lugar' },
+    { code: 'in', label: '-in-', description: 'Feminino' },
+    { code: 'eg', label: '-eg-', description: 'Aumentativo' },
+    { code: 'et', label: '-et-', description: 'Diminutivo' },
+    { code: 'ar', label: '-ar-', description: 'Conjunto/Coletivo' },
+    { code: 'ist', label: '-ist-', description: 'Profissional/Ocupação' },
+    { code: 'il', label: '-il-', description: 'Ferramenta/Instrumento' },
+    { code: 'ig', label: '-ig-', description: 'Tornar/Causar' },
+    { code: 'iĝ', label: '-iĝ-', description: 'Tornar-se' },
+    { code: 'ad', label: '-ad-', description: 'Ação contínua/hábito' },
+    { code: 'ebl', label: '-ebl-', description: 'Possibilidade' },
+  ];
+
+  const endings = [
+    { code: 'o', label: '-o (Subst.)' },
+    { code: 'a', label: '-a (Adj.)' },
+    { code: 'e', label: '-e (Advt.)' },
+    { code: 'i', label: '-i (Infinitivo)' },
+  ];
+
+  const buildWord = () => {
+    return selectedPrefixes.join('') + selectedRoot + selectedSuffixes.join('') + ending;
+  };
+
+  const analyzeCompound = async (customWord?: { root: string, prefixes: string[], suffixes: string[], ending: string }) => {
+    const root = customWord?.root || selectedRoot;
+    const pre = customWord?.prefixes || selectedPrefixes;
+    const suf = customWord?.suffixes || selectedSuffixes;
+    const end = customWord?.ending || ending;
+    
+    if (customWord) {
+      setSelectedRoot(root);
+      setSelectedPrefixes(pre);
+      setSelectedSuffixes(suf);
+      setEnding(end);
+    }
+
+    const fullWord = pre.join('') + root + suf.join('') + end;
     setIsLoading(true);
     setError(null);
     setExplanation(null);
-    setExamples([]);
+    setCompoundMeaning(null);
+    setAiBreakdown([]);
 
     try {
       const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
       const response = await ai.models.generateContent({
         model: "gemini-3-flash-preview",
-        contents: `Você é um professor especialista em Esperanto.
-        Explique detalhadamente o funcionamento e a lógica do afixo "${affix}".
-        A explicação deve ser em português (Brasil), didática e profunda.
-        Forneça 3 exemplos práticos e claros de palavras antes e depois do afixo.
-        
-        Siga estritamente o formato JSON.`,
+        contents: `Você é um professor especialista em Esperanto, focado em morfologia.
+        Explique detalhadamente como a palavra composta "${fullWord}" foi formada a partir de suas partes:
+        Prefixos: ${pre.join(', ') || 'nenhum'}
+        Raiz: ${root}
+        Sufixos: ${suf.join(', ') || 'nenhum'}
+        Terminação: ${end}
+
+        Decomponha a palavra parte por parte e explique como cada afixo altera o significado da raiz até chegar ao conceito final.
+        Siga o formato JSON estritamente.
+        O "breakdown" deve mostrar a evolução: Raiz -> + Prefixo -> + Sufixo... até a palavra final.`,
         config: {
           responseMimeType: "application/json",
           responseSchema: {
             type: Type.OBJECT,
             properties: {
-              explanation: { 
-                type: Type.STRING, 
-                description: "Uma explicação detalhada e pedagógica em português do Brasil sobre o afixo." 
-              },
-              examples: {
+              meaning: { type: Type.STRING, description: "O significado final da palavra em português." },
+              explanation: { type: Type.STRING, description: "A explicação teórica da formação." },
+              breakdown: {
                 type: Type.ARRAY,
-                description: "Três exemplos de aplicação do afixo.",
+                description: "O passo a passo da formação.",
                 items: {
                   type: Type.OBJECT,
                   properties: {
-                    original: { type: Type.STRING, description: "A palavra raiz original (ex: Domo)" },
-                    modified: { type: Type.STRING, description: "A palavra com o afixo aplicado (ex: Domego)" },
-                    meaning: { type: Type.STRING, description: "O significado da palavra modificada (ex: Casarão)" }
+                    step: { type: Type.STRING, description: "A palavra parcial (ex: San -> Malsan -> Malsanul...)" },
+                    added: { type: Type.STRING, description: "O pedaço que foi adicionado nesse passo" },
+                    concept: { type: Type.STRING, description: "O novo conceito formado após essa adição" }
                   },
-                  required: ["original", "modified", "meaning"]
+                  required: ["step", "added", "concept"]
                 }
               }
             },
-            required: ["explanation", "examples"]
+            required: ["meaning", "explanation", "breakdown"]
           }
         }
       });
 
-      const text = response.text;
-      if (!text) {
-        throw new Error("A IA retornou uma resposta vazia.");
-      }
-
-      const data = JSON.parse(text.trim());
+      const data = JSON.parse(response.text.trim());
       setExplanation(data.explanation);
-      setExamples(data.examples);
+      setCompoundMeaning(data.meaning);
+      setAiBreakdown(data.breakdown);
     } catch (err) {
       console.error("Erro na AffixExplorer:", err);
-      setError("Houve um problema ao consultar o Mestre de IA. Por favor, tente novamente.");
+      setError("O Mestre de IA teve dificuldade em montar essa palavra. Tente uma combinação diferente.");
     } finally {
       setIsLoading(false);
     }
   };
 
+  const togglePrefix = (prefix: string) => {
+    setSelectedPrefixes(prev => 
+      prev.includes(prefix) ? prev.filter(p => p !== prefix) : [...prev, prefix]
+    );
+  };
+
+  const toggleSuffix = (suffix: string) => {
+    setSelectedSuffixes(prev => 
+      prev.includes(suffix) ? prev.filter(s => s !== suffix) : [...prev, suffix]
+    );
+  };
+
   return (
-    <div className="space-y-8 py-4">
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        {affixes.map((affix) => (
+    <div className="space-y-10 py-6">
+      {/* Word Builder Visualizer */}
+      <div className="bg-slate-900 p-10 rounded-[3rem] shadow-2xl relative overflow-hidden">
+        <div className="absolute top-0 right-0 p-8 opacity-10">
+          <BookOpen size={200} />
+        </div>
+        
+        <div className="relative z-10 flex flex-col items-center">
+          <div className="flex flex-wrap justify-center gap-2 mb-6">
+            {presets.map(preset => (
+              <button
+                key={preset.name}
+                onClick={() => analyzeCompound(preset.word)}
+                className="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white/60 hover:text-white text-[10px] font-bold rounded-full transition-all border border-white/5"
+              >
+                Exemplo: {preset.name}
+              </button>
+            ))}
+          </div>
+
+          <span className="text-[10px] font-black uppercase tracking-[0.3em] text-emerald-400 mb-6">
+            Oficina de Construção de Palavras
+          </span>
+          
+          <div className="flex flex-wrap items-center justify-center gap-2 mb-10">
+            {/* Prefixes */}
+            {selectedPrefixes.map(p => (
+              <motion.div layout key={`p-${p}`} className="px-5 py-3 bg-indigo-500/20 border-2 border-indigo-500/40 text-indigo-400 rounded-2xl font-black text-2xl">
+                {p}-
+              </motion.div>
+            ))}
+            
+            {/* Root */}
+            <motion.div layout className="px-8 py-5 bg-emerald-500 text-white rounded-[2rem] font-black text-4xl shadow-xl shadow-emerald-500/20 ring-4 ring-emerald-500/20">
+              {selectedRoot}
+            </motion.div>
+            
+            {/* Suffixes */}
+            {selectedSuffixes.map(s => (
+              <motion.div layout key={`s-${s}`} className="px-5 py-3 bg-amber-500/20 border-2 border-amber-500/40 text-amber-500 rounded-2xl font-black text-2xl">
+                -{s}-
+              </motion.div>
+            ))}
+            
+            {/* Ending */}
+            <motion.div layout className="px-6 py-4 bg-slate-700 text-slate-300 rounded-2xl font-black text-2xl">
+              -{ending}
+            </motion.div>
+          </div>
+
           <button
-            key={affix.code}
-            onClick={() => exploreAffix(affix.code)}
-            className={`p-4 rounded-2xl border-2 font-black text-xl transition-all active:scale-95 ${
-              selectedAffix === affix.code
-                ? 'bg-emerald-600 border-emerald-600 text-white shadow-xl shadow-emerald-600/20'
-                : 'bg-white border-slate-100 hover:border-emerald-500 hover:bg-emerald-50 text-slate-900'
-            }`}
+            onClick={analyzeCompound}
+            disabled={isLoading}
+            className="group px-12 py-5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-3xl font-black text-xl transition-all flex items-center gap-3 shadow-xl shadow-emerald-900/20 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {affix.label}
+            {isLoading ? (
+              <div className="w-6 h-6 border-3 border-white/30 border-t-white rounded-full animate-spin" />
+            ) : (
+              <Sparkles size={24} className="group-hover:rotate-12 transition-transform" />
+            )}
+            Analisar com IA
           </button>
-        ))}
+        </div>
       </div>
 
-      <AnimatePresence mode="wait">
-        {isLoading ? (
-          <motion.div
-            key="loading"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="p-8 bg-slate-50 rounded-3xl border border-slate-200 flex flex-col items-center gap-4"
-          >
-            <div className="w-12 h-12 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin" />
-            <p className="font-bold text-slate-500">Consultando a IA para detalhes sobre "{selectedAffix}"...</p>
-          </motion.div>
-        ) : error ? (
-          <motion.div
-            key="error"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="p-8 bg-red-50 rounded-3xl border border-red-200 text-red-600 flex flex-col items-center gap-4 text-center"
-          >
-            <AlertCircle size={40} />
-            <p className="font-bold">{error}</p>
-            <button 
-              onClick={() => exploreAffix(selectedAffix!)}
-              className="px-6 py-2 bg-red-600 text-white rounded-xl font-bold"
-            >
-              Tentar Novamente
-            </button>
-          </motion.div>
-        ) : selectedAffix && explanation ? (
-          <motion.div
-            key="content"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="p-8 bg-emerald-50 rounded-3xl border border-emerald-100 space-y-6"
-          >
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-emerald-500 rounded-xl flex items-center justify-center text-white">
-                <Sparkles size={20} />
-              </div>
-              <h3 className="text-2xl font-black text-emerald-900">Mergulho em "{selectedAffix}"</h3>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+        <div className="space-y-8">
+          {/* Root Selection */}
+          <section>
+            <h4 className="text-xs font-black uppercase tracking-widest text-slate-400 mb-4 flex items-center gap-2">
+              <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+              Escolha a Raiz
+            </h4>
+            <div className="grid grid-cols-2 gap-2">
+              {roots.map(r => (
+                <button
+                  key={r.code}
+                  onClick={() => setSelectedRoot(r.code)}
+                  className={`p-4 rounded-2xl border-2 text-left transition-all ${
+                    selectedRoot === r.code 
+                      ? 'bg-emerald-50 border-emerald-500 shadow-sm' 
+                      : 'bg-white border-slate-100 hover:border-emerald-200'
+                  }`}
+                >
+                  <p className="font-black text-slate-800">{r.label}</p>
+                  <p className="text-[10px] text-slate-400 font-medium">{r.description}</p>
+                </button>
+              ))}
             </div>
+          </section>
 
-            <p className="text-emerald-800 font-medium leading-relaxed bg-white/50 p-4 rounded-2xl">
-              {explanation}
-            </p>
+          {/* Prefix Selection */}
+          <section>
+            <h4 className="text-xs font-black uppercase tracking-widest text-slate-400 mb-4 flex items-center gap-2">
+              <div className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
+              Adicionar Prefixos
+            </h4>
+            <div className="flex flex-wrap gap-2">
+              {prefixes.map(p => (
+                <button
+                  key={p.code}
+                  onClick={() => togglePrefix(p.code)}
+                  className={`px-4 py-2 rounded-xl border-2 font-bold text-sm transition-all ${
+                    selectedPrefixes.includes(p.code)
+                      ? 'bg-indigo-500 border-indigo-500 text-white shadow-md'
+                      : 'bg-white border-slate-100 hover:border-indigo-200 text-slate-600'
+                  }`}
+                  title={p.description}
+                >
+                  {p.label}
+                </button>
+              ))}
+            </div>
+          </section>
 
-            <div className="space-y-3">
-              <p className="text-xs font-black text-emerald-600 uppercase tracking-widest pl-1">Exemplos Gerados pela IA</p>
-              <div className="grid gap-3">
-                {examples.map((ex, i) => (
-                  <div key={i} className="flex items-center justify-between p-4 bg-white rounded-2xl border border-emerald-100 shadow-sm group hover:shadow-md transition-shadow">
-                    <div className="flex items-center gap-4">
-                      <span className="text-slate-400 font-bold line-through group-hover:text-red-300 transition-colors">{ex.original}</span>
-                      <ChevronRight size={16} className="text-emerald-300" />
-                      <span className="text-emerald-600 font-black text-xl">{ex.modified}</span>
-                    </div>
-                    <span className="text-slate-600 font-bold italic">{ex.meaning}</span>
+          {/* Suffix Selection */}
+          <section>
+            <h4 className="text-xs font-black uppercase tracking-widest text-slate-400 mb-4 flex items-center gap-2">
+              <div className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+              Adicionar Sufixos
+            </h4>
+            <div className="grid grid-cols-3 gap-2">
+              {suffixes.map(s => (
+                <button
+                  key={s.code}
+                  onClick={() => toggleSuffix(s.code)}
+                  className={`p-3 rounded-xl border-2 font-bold text-xs text-center transition-all ${
+                    selectedSuffixes.includes(s.code)
+                      ? 'bg-amber-500 border-amber-500 text-white shadow-md'
+                      : 'bg-white border-slate-100 hover:border-amber-200 text-slate-600'
+                  }`}
+                  title={s.description}
+                >
+                  {s.label}
+                </button>
+              ))}
+            </div>
+          </section>
+
+          {/* Ending Selection */}
+          <section>
+            <h4 className="text-xs font-black uppercase tracking-widest text-slate-400 mb-4 flex items-center gap-2">
+              <div className="w-1.5 h-1.5 rounded-full bg-slate-500" />
+              Terminação (Gramática)
+            </h4>
+            <div className="flex gap-2">
+              {endings.map(e => (
+                <button
+                  key={e.code}
+                  onClick={() => setEnding(e.code)}
+                  className={`flex-1 py-3 rounded-xl border-2 font-black transition-all ${
+                    ending === e.code
+                      ? 'bg-slate-800 border-slate-800 text-white'
+                      : 'bg-white border-slate-100 hover:border-slate-300 text-slate-500'
+                  }`}
+                >
+                  {e.label}
+                </button>
+              ))}
+            </div>
+          </section>
+        </div>
+
+        <div className="relative">
+          <AnimatePresence mode="wait">
+            {!explanation && !isLoading && !error && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="h-full flex flex-col items-center justify-center p-12 border-4 border-dashed border-slate-100 rounded-[3rem] text-center space-y-6"
+              >
+                <div className="w-24 h-24 bg-slate-50 rounded-[2rem] flex items-center justify-center text-slate-200">
+                  <Zap size={48} />
+                </div>
+                <div>
+                  <h5 className="text-xl font-black text-slate-400 mb-2">Pronto para a Mágica?</h5>
+                  <p className="text-slate-300 font-medium">Monte sua palavra complexa e desafie a IA a explicá-la.</p>
+                </div>
+              </motion.div>
+            )}
+
+            {isLoading && (
+              <motion.div
+                key="loading"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="h-full flex flex-col items-center justify-center p-12 bg-emerald-50/50 rounded-[3rem] border-2 border-emerald-100 text-center space-y-6"
+              >
+                <div className="w-20 h-20 border-8 border-emerald-200 border-t-emerald-500 rounded-full animate-spin" />
+                <p className="text-emerald-700 font-black text-xl">O Mestre de IA está decodificando a morfologia...</p>
+              </motion.div>
+            )}
+
+            {explanation && (
+              <motion.div
+                key="result"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                className="p-10 bg-white rounded-[3rem] border-2 border-emerald-100 shadow-2xl space-y-8"
+              >
+                <div>
+                  <span className="text-[10px] font-black uppercase tracking-widest text-emerald-500 mb-2 block">
+                    Resultado da Análise
+                  </span>
+                  <h3 className="text-4xl font-black text-slate-900 mb-2">"{compoundMeaning}"</h3>
+                  <p className="text-slate-500 font-medium italic">Significado da palavra montada</p>
+                </div>
+
+                <div className="space-y-4">
+                  <h4 className="text-xs font-black uppercase tracking-widest text-slate-400 pl-2">Passo a Passo Visual</h4>
+                  <div className="space-y-3 relative before:absolute before:left-[19px] before:top-4 before:bottom-4 before:w-0.5 before:bg-slate-100">
+                    {aiBreakdown.map((item, idx) => (
+                      <div key={idx} className="flex gap-4 relative z-10 group">
+                        <div className="w-10 h-10 rounded-xl bg-white border border-slate-100 shadow-sm flex items-center justify-center font-black text-emerald-500 shrink-0 group-hover:scale-110 transition-transform">
+                          {idx + 1}
+                        </div>
+                        <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 flex-1 hover:border-emerald-200 transition-colors">
+                          <div className="flex justify-between items-center mb-1">
+                            <span className="font-black text-slate-900 text-lg">{item.step}</span>
+                            <span className="text-[10px] font-black uppercase bg-emerald-100 text-emerald-600 px-2 py-0.5 rounded-md">+{item.added}</span>
+                          </div>
+                          <p className="text-xs text-slate-500 font-bold">{item.concept}</p>
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-            </div>
-          </motion.div>
-        ) : (
-          <motion.div
-            key="placeholder"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="p-12 border-2 border-dashed border-slate-200 rounded-3xl text-center space-y-4"
-          >
-            <div className="w-16 h-16 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-300 mx-auto">
-              <Zap size={32} />
-            </div>
-            <p className="text-slate-400 font-bold">Clique em um afixo acima para explorar seu poder com ajuda da IA.</p>
-          </motion.div>
-        )}
-      </AnimatePresence>
+                </div>
+
+                <div className="p-6 bg-emerald-50 rounded-[2rem] border border-emerald-100">
+                  <div className="flex items-center gap-3 mb-4">
+                    <Sparkles className="text-emerald-500" size={24} />
+                    <h4 className="font-black text-emerald-800 uppercase tracking-wide">Explicação Detalhada</h4>
+                  </div>
+                  <p className="text-emerald-900 leading-relaxed font-medium">
+                    {explanation}
+                  </p>
+                </div>
+
+                <div className="space-y-4">
+                  <h4 className="text-xs font-black uppercase tracking-widest text-slate-400 pl-2">Por que isso acontece?</h4>
+                  <div className="bg-slate-50 p-4 rounded-3xl border border-slate-100 text-sm text-slate-600 font-medium flex items-center gap-3">
+                    <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-emerald-500 shadow-sm">
+                      <ChevronRight size={20} />
+                    </div>
+                    No Esperanto, o significado é cumulativo. Cada peça adicionada modifica o bloco anterior.
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
+            {error && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="p-10 bg-red-50 rounded-[3rem] border-2 border-red-100 flex flex-col items-center justify-center text-center space-y-6"
+              >
+                <AlertCircle className="text-red-500" size={48} />
+                <p className="text-red-800 font-black text-xl">{error}</p>
+                <button onClick={analyzeCompound} className="px-8 py-3 bg-red-600 text-white rounded-2xl font-bold">
+                  Tentar outra vez
+                </button>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      </div>
     </div>
   );
 }
+
 
 import { Lesson, LessonPart } from '../types';
 
@@ -541,6 +780,47 @@ const MANUAL_LESSONS: Lesson[] = [
       { type: 'question', content: 'Se você quer perguntar "Quem é este?", qual palavra usaria?', options: ['Kie', 'Kiu', 'Kiam'], correctAnswer: 'Kiu', explanation: 'Kiu refere-se a indivíduos ou coisas específicas.' },
       { type: 'text', content: 'Essa matriz tem 45 combinações que cobrem quase tudo! Veremos mais detalhes nas lições avançadas.' },
       { type: 'question', content: 'Como se diz "Qual tipo de"?', options: ['Kia', 'Kie', 'Kio'], correctAnswer: 'Kia', explanation: 'O final -a indica qualidade/tipo.' }
+    ]
+  },
+  {
+    id: 'l11',
+    title: 'Avançado: Advérbios de Tempo e Frequência',
+    description: 'Domine a arte de situar ações no tempo com precisão.',
+    parts: [
+      { type: 'text', content: 'Além dos tempos verbais (-as, -is, -os), o Esperanto possui um sistema rico de advérbios para indicar quando e com que frequência as coisas acontecem.' },
+      { type: 'example', content: '"Nun" (Agora), "Tiam" (Então/Naquele momento), "Hodiaŭ" (Hoje), "Morgaŭ" (Amanhã), "Hieraŭ" (Ontem).' },
+      { type: 'fill-blank', content: 'Mi lernas Esperanton _______.', options: ['hodiaŭ', 'hieraŭ', 'nun'], correctAnswer: 'nun', explanation: '"Nun" significa agora, indicando uma ação presente e imediata.' },
+      { type: 'text', content: 'Para frequência, usamos palavras como "Ĉiam" (Sempre), "Neniam" (Nunca), "Ofte" (Frequentemente), "Kelkfoje" (Às vezes).' },
+      { type: 'question', content: 'Como se diz "Eu nunca como carne"? (Viando = Carne)', options: ['Mi ĉiam manĝas viandon', 'Mi neniam manĝas viandon', 'Mi ofte manĝas viandon'], correctAnswer: 'Mi neniam manĝas viandon', explanation: '"Neniam" significa nunca.' },
+      { type: 'order-sentences', content: 'Ordene a frase: "Amanhã nós viajaremos"', pieces: ['Morgaŭ', 'ni', 'vojaĝos'], correctAnswer: 'Morgaŭ ni vojaĝos', explanation: 'Morgaŭ (Amanhã) + ni (nós) + vojaĝos (viajaremos).' }
+    ]
+  },
+  {
+    id: 'l12',
+    title: 'Avançado: Preposições Complexas',
+    description: 'Conectores avançados para expressar nuances e exceções.',
+    parts: [
+      { type: 'text', content: 'Algumas preposições no Esperanto ajudam a expressar ideias mais complexas do que simples direções.' },
+      { type: 'example', content: '"Anstataŭ" (Em vez de), "Escepte" (Exceto), "Malgraŭ" (Apesar de), "Pro" (Por causa de).' },
+      { type: 'example', content: '"Malgraŭ la pluvo, ni eliris" (Apesar da chuva, nós saímos).' },
+      { type: 'fill-blank', content: 'Mi trinkas teon _______ kafo.', options: ['anstataŭ', 'escepte', 'pro'], correctAnswer: 'anstataŭ', explanation: '"Anstataŭ" expressa substituição (em vez de).' },
+      { type: 'text', content: 'A preposição "Pro" indica a causa de algo.' },
+      { type: 'example', content: '"Dankon pro la helpo" (Obrigado pela ajuda - por causa da ajuda).' },
+      { type: 'question', content: 'O que significa "Escepte de"?', options: ['A favor de', 'Em vez de', 'Com exceção de'], correctAnswer: 'Com exceção de', explanation: 'Escepte = Exceto.' },
+      { type: 'order-sentences', content: 'Ordene: "Apesar da chuva, tudo está bem"', pieces: ['Malgraŭ', 'la', 'pluvo,', 'ĉio', 'estas', 'bone'], correctAnswer: 'Malgraŭ la pluvo, ĉio estas bone', explanation: 'Malgraŭ (Apesar de) + la pluvo (a chuva), ĉio (tudo) estas (está) bone (bem).' }
+    ]
+  },
+  {
+    id: 'l13',
+    title: 'Avançado: A Arte dos Afixos Compostos',
+    description: 'Como combinar várias peças para criar conceitos complexos em uma só palavra.',
+    parts: [
+      { type: 'text', content: 'Uma das maiores belezas do Esperanto é a capacidade de empilhar afixos para criar palavras precisas.' },
+      { type: 'example', content: 'Malsanulejo: Mal- (oposto) + san (saúde) + ul (pessoa) + ej (lugar) + o (substantivo) = Hospital.' },
+      { type: 'question', content: 'O que significaria "Malsanulino"?', options: ['Uma mulher saudável', 'Uma mulher doente', 'Um hospital feminino'], correctAnswer: 'Uma mulher doente', explanation: 'Mal- (não) + san (saudável) + ul (pessoa) + in (mulher) + o (substantivo).' },
+      { type: 'fill-blank', content: 'A palavra para "Ferramenta de limpeza" seria _______ilo.', options: ['Purig', 'Malsan', 'Lern'], correctAnswer: 'Purig', explanation: 'Pura (limpo) + ig (tornar) = Purigi (limpar). Purigilo = Ferramenta de limpar.' },
+      { type: 'text', content: 'Veja a palavra "Arbaro" (Floresta). Se adicionarmos "et", temos "Arbareto" (Bosque). Se adicionarmos "eg", temos "Arbarego" (Selva densa).' },
+      { type: 'order-sentences', content: 'Construa a frase: "O cachorro grande corre rápido"', pieces: ['La', 'granda', 'hundo', 'kuras', 'rapide'], correctAnswer: 'La granda hundo kuras rapide', explanation: 'La (O) + granda (grande) + hundo (cachorro) + kuras (corre) + rapide (rapidamente).' }
     ]
   }
 ];
@@ -823,7 +1103,13 @@ const ADVANCED_LESSONS: Lesson[] = [
 ];
 
 const SAMPLE_LESSONS: Lesson[] = [
-  ...MANUAL_LESSONS.map(l => ({ ...l, difficulty: 'beginner' as const })), 
+  ...MANUAL_LESSONS.map(l => {
+    const idNum = parseInt(l.id.substring(1));
+    let difficulty: 'beginner' | 'intermediate' | 'advanced' = 'beginner';
+    if (idNum >= 11) difficulty = 'advanced';
+    else if (idNum >= 7) difficulty = 'intermediate';
+    return { ...l, difficulty };
+  }), 
   ...GENERATED_LESSONS.map(l => ({ ...l, difficulty: 'intermediate' as const })),
   ...ADVANCED_LESSONS
 ];
@@ -1038,6 +1324,7 @@ export function Lessons({
   const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
   const [focusedOptionIndex, setFocusedOptionIndex] = useState<number>(-1);
   const [isLessonFinished, setIsLessonFinished] = useState(false);
+  const [orderedWords, setOrderedWords] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const lessonContainerRef = useRef<HTMLDivElement>(null);
 
@@ -1181,7 +1468,7 @@ export function Lessons({
         const options = part.options || [];
 
         if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
-          if (part.type === 'question' || part.type === 'combine') {
+          if (part.type === 'question' || part.type === 'combine' || part.type === 'fill-blank' || part.type === 'order-sentences') {
             e.preventDefault();
             const direction = e.key === 'ArrowDown' ? 1 : -1;
             setFocusedOptionIndex(prev => {
@@ -1198,7 +1485,7 @@ export function Lessons({
             handleNext();
           }
         } else if (e.key === 'ArrowRight') {
-          const isInteractive = part.type === 'question' || part.type === 'combine';
+          const isInteractive = part.type === 'question' || part.type === 'combine' || part.type === 'fill-blank' || part.type === 'order-sentences';
           if (!isInteractive || isCorrect) {
             handleNext();
           }
@@ -1207,6 +1494,7 @@ export function Lessons({
             setCurrentPartIndex(currentPartIndex - 1);
             setSelectedOption(null);
             setIsCorrect(null);
+            setOrderedWords([]);
             setFocusedOptionIndex(-1);
           }
         }
@@ -1289,6 +1577,7 @@ export function Lessons({
       setMaxVisitedIndex(Math.max(maxVisitedIndex, nextIndex));
       setSelectedOption(null);
       setIsCorrect(null);
+      setOrderedWords([]);
     } else {
       onComplete(selectedLesson.id);
       setIsLessonFinished(true);
@@ -1830,6 +2119,8 @@ export function Lessons({
                   <h2 className="text-4xl font-black text-slate-900 leading-tight">
                     {part.type === 'question' ? 'Desafio Prático' : 
                      part.type === 'combine' ? 'Complete a Sentença' : 
+                     part.type === 'fill-blank' ? 'Preencha a Lacuna' :
+                     part.type === 'order-sentences' ? 'Ordene a Frase' :
                      part.type === 'example' ? 'Exemplo de Uso' : 
                      part.type === 'icon' ? 'Conceito Chave' : 'Explicação'}
                   </h2>
@@ -1963,6 +2254,97 @@ export function Lessons({
                   </div>
                 )}
 
+                {part.type === 'fill-blank' && (
+                  <div className="space-y-6">
+                    <div className="p-8 bg-slate-50 rounded-3xl border border-slate-100 text-center mb-8">
+                       <p className="text-3xl font-black text-slate-900 tracking-tight">
+                         {part.content.split('_______').map((s, i, arr) => (
+                           <React.Fragment key={i}>
+                             {s}
+                             {i < arr.length - 1 && (
+                               <span className={`mx-2 border-b-4 inline-block min-w-[120px] pb-1 transition-all ${
+                                 selectedOption 
+                                   ? isCorrect ? 'border-emerald-500 text-emerald-600' : 'border-red-500 text-red-600'
+                                   : 'border-slate-300'
+                               }`}>
+                                 {selectedOption || '...'}
+                               </span>
+                             )}
+                           </React.Fragment>
+                         ))}
+                       </p>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {part.options?.map((option, index) => (
+                        <button
+                          key={option}
+                          onClick={() => !isCorrect && checkAnswer(option)}
+                          className={`p-5 rounded-2xl border-2 font-bold transition-all ${
+                            selectedOption === option
+                              ? isCorrect 
+                                ? 'bg-emerald-500 border-emerald-500 text-white shadow-lg'
+                                : 'bg-red-500 border-red-500 text-white shadow-lg'
+                              : 'bg-white border-slate-100 hover:border-emerald-600'
+                          }`}
+                        >
+                          {option}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {part.type === 'order-sentences' && (
+                  <div className="space-y-8">
+                    <div className="p-8 bg-slate-50 rounded-3xl border border-slate-100 min-h-[120px] flex flex-wrap gap-2 items-center justify-center">
+                      {orderedWords.map((word, i) => (
+                        <motion.button
+                          layout
+                          key={`${word}-${i}`}
+                          onClick={() => !isCorrect && setOrderedWords(orderedWords.filter((_, idx) => idx !== i))}
+                          className="px-4 py-2 bg-emerald-500 text-white font-black rounded-xl shadow-sm hover:bg-emerald-600 active:scale-95 transition-all"
+                        >
+                          {word}
+                        </motion.button>
+                      ))}
+                      {orderedWords.length === 0 && (
+                        <p className="text-slate-300 font-bold italic">Toque nas palavras abaixo para ordenar</p>
+                      )}
+                    </div>
+
+                    <div className="flex flex-wrap justify-center gap-3">
+                      {part.pieces?.filter(p => !orderedWords.includes(p) || part.pieces?.filter(x => x === p).length > orderedWords.filter(x => x === p).length).map((piece, i) => (
+                         <motion.button
+                          layout
+                          key={`${piece}-${i}`}
+                          onClick={() => {
+                            if (isCorrect) return;
+                            const newOrdered = [...orderedWords, piece];
+                            setOrderedWords(newOrdered);
+                            if (newOrdered.length === part.pieces?.length) {
+                              checkAnswer(newOrdered.join(' '));
+                            }
+                          }}
+                          className="px-6 py-3 bg-white border-2 border-slate-100 rounded-2xl font-bold text-slate-700 hover:border-emerald-500 shadow-sm active:scale-95 transition-all"
+                         >
+                           {piece}
+                         </motion.button>
+                      ))}
+                    </div>
+
+                    {orderedWords.length > 0 && !isCorrect && (
+                      <div className="flex justify-center">
+                        <button 
+                          onClick={() => setOrderedWords([])}
+                          className="text-xs font-black text-slate-400 uppercase tracking-widest hover:text-red-500 transition-colors"
+                        >
+                          Reiniciar Ordem
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 {isCorrect !== null && (
                   <motion.div
                     initial={{ opacity: 0, y: 10 }}
@@ -1994,10 +2376,10 @@ export function Lessons({
 
                 <div className="pt-8 flex justify-end">
                   <button
-                    disabled={(part.type === 'question' || part.type === 'combine') && !isCorrect}
+                    disabled={(part.type === 'question' || part.type === 'combine' || part.type === 'fill-blank' || part.type === 'order-sentences') && !isCorrect}
                     onClick={handleNext}
                     className={`px-10 py-4 rounded-2xl font-bold flex items-center transition-all ${
-                      (part.type === 'question' || part.type === 'combine') && !isCorrect
+                      (part.type === 'question' || part.type === 'combine' || part.type === 'fill-blank' || part.type === 'order-sentences') && !isCorrect
                         ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
                         : 'bg-slate-900 text-white hover:bg-emerald-700 shadow-xl'
                     }`}

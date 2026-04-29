@@ -1,5 +1,5 @@
 export interface LessonPart {
-  type: 'text' | 'question' | 'example' | 'image' | 'icon' | 'combine' | 'affix-explorer';
+  type: 'text' | 'question' | 'example' | 'image' | 'icon' | 'combine' | 'affix-explorer' | 'fill-blank' | 'order-sentences';
   content: string;
   options?: string[];
   correctAnswer?: string;
@@ -9,6 +9,8 @@ export interface LessonPart {
   // For combine type
   root?: string;
   targetMeaning?: string;
+  // For order-sentences
+  pieces?: string[];
 }
 
 export interface Lesson {
