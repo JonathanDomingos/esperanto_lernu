@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Search, Plus, Book, X } from 'lucide-react';
 import { DICTIONARY, DictionaryEntry } from '../data/dictionary';
+import { Tooltip } from './ui/Tooltip';
 
 interface DictionarySearchProps {
   onAddFlashcard: (front: string, back: string, category?: string) => void;
@@ -10,7 +11,7 @@ interface DictionarySearchProps {
 
 export function DictionarySearch({ onAddFlashcard, inline = false }: DictionarySearchProps) {
   const [query, setQuery] = useState('');
-  const [isOpen, setIsOpen] = useState(!inline);
+  const [isOpen, setIsOpen] = useState(false);
 
   const results = useMemo(() => {
     if (!query.trim()) return [];
@@ -24,13 +25,14 @@ export function DictionarySearch({ onAddFlashcard, inline = false }: DictionaryS
   return (
     <div className={`${inline ? 'w-full' : 'relative z-50'}`}>
       {!inline && (
-        <button 
-          onClick={() => setIsOpen(!isOpen)}
-          className="fixed bottom-32 md:bottom-8 right-6 md:right-8 w-14 h-14 bg-slate-900 text-white rounded-full shadow-2xl flex items-center justify-center hover:bg-emerald-600 transition-all z-50"
-          title="Dicionário Rápido"
-        >
-          {isOpen ? <X size={24} /> : <Search size={24} />}
-        </button>
+        <Tooltip content={isOpen ? "Fechar Dicionário" : "Dicionário Rápido"} position="left">
+          <button 
+            onClick={() => setIsOpen(!isOpen)}
+            className="fixed bottom-32 md:bottom-8 right-6 md:right-8 w-14 h-14 bg-slate-900 text-white rounded-full shadow-2xl flex items-center justify-center hover:bg-emerald-600 transition-all z-50"
+          >
+            {isOpen ? <X size={24} /> : <Search size={24} />}
+          </button>
+        </Tooltip>
       )}
 
       <AnimatePresence>
@@ -72,13 +74,14 @@ export function DictionarySearch({ onAddFlashcard, inline = false }: DictionaryS
                         <span className="text-xs bento-label text-emerald-600">{entry.category}</span>
                         <h4 className="font-bold text-slate-900 text-lg">{entry.word}</h4>
                       </div>
-                      <button 
-                        onClick={() => onAddFlashcard(entry.word, entry.translation, entry.category)}
-                        className="p-2 bg-white text-slate-400 hover:text-emerald-600 hover:shadow-sm rounded-xl transition-all"
-                        title="Adicionar aos Flashcards"
-                      >
-                        <Plus size={18} />
-                      </button>
+                      <Tooltip content="Adicionar aos Flashcards" position="left">
+                        <button 
+                          onClick={() => onAddFlashcard(entry.word, entry.translation, entry.category)}
+                          className="p-2 bg-white text-slate-400 hover:text-emerald-600 hover:shadow-sm rounded-xl transition-all"
+                        >
+                          <Plus size={18} />
+                        </button>
+                      </Tooltip>
                     </div>
                     <p className="text-slate-600 font-medium text-sm mb-3">{entry.translation}</p>
                     <div className="bg-white/50 p-3 rounded-xl border border-white">

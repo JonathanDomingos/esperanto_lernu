@@ -1,7 +1,8 @@
 import React from 'react';
 import { motion } from 'motion/react';
-import { Award, Trophy, Users, Star, Flame, Zap, Settings, Bell, Volume2, LayoutGrid, List, Palette } from 'lucide-react';
+import { Award, Trophy, Users, Star, Flame, Zap, Settings, Bell, Volume2, LayoutGrid, List, Palette, History, Calendar, Clock, Search, BookOpen } from 'lucide-react';
 import { Badge, UserStats, NotificationSettings, DashboardSettings } from '../types';
+import { SAMPLE_LESSONS } from './Lessons';
 
 interface DashboardProps {
   stats: UserStats;
@@ -187,6 +188,124 @@ export function Dashboard({ stats, allBadges, settings, onUpdateSettings }: Dash
                   <div className="text-[10px] bento-label text-slate-400 uppercase tracking-widest">Conquistas</div>
                 </div>
               </motion.div>
+            </div>
+          </div>
+
+          <div className="bento-card p-6 md:p-10 bg-white overflow-hidden relative">
+            <div className={`absolute top-0 right-0 p-8 opacity-5 ${THEMES[sections.progress].primary}`}>
+              <History size={120} />
+            </div>
+            
+            <h3 className="text-3xl font-black text-slate-900 mb-8 flex items-center gap-4 relative z-10 text-left">
+              <div className={`w-10 h-10 ${THEMES[sections.progress].bg} ${THEMES[sections.progress].primary} rounded-xl flex items-center justify-center shadow-lg`}>
+                <History size={24} />
+              </div>
+              Histórico de Lições
+            </h3>
+
+            <div className="space-y-4 relative z-10">
+              {!stats.lessonScores || stats.lessonScores.length === 0 ? (
+                <div className="py-12 text-center bg-slate-50 rounded-[32px] border border-dashed border-slate-200">
+                  <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center text-slate-300 mx-auto mb-4 shadow-sm">
+                    <Clock size={32} />
+                  </div>
+                  <p className="text-slate-400 font-bold">Nenhuma lição concluída ainda.</p>
+                  <p className="text-slate-300 text-xs mt-1">Sua jornada está esperando por você!</p>
+                </div>
+              ) : (
+                <div className="grid gap-4">
+                  {[...stats.lessonScores].reverse().slice(0, 5).map((score, i) => {
+                    const lesson = SAMPLE_LESSONS.find(l => l.id === score.lessonId);
+                    const date = new Date(score.timestamp).toLocaleDateString('pt-BR', {
+                      day: '2-digit',
+                      month: 'short',
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    });
+                    
+                    return (
+                      <motion.div 
+                        key={`${score.lessonId}-${score.timestamp}`}
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: i * 0.1 }}
+                        className="flex items-center justify-between p-5 bg-slate-50 rounded-2xl border border-slate-100 hover:bg-white hover:shadow-xl hover:shadow-slate-200/50 transition-all group/history"
+                      >
+                        <div className="flex items-center gap-5">
+                          <div className={`w-12 h-12 ${score.score >= 80 ? 'bg-emerald-100 text-emerald-600' : 'bg-amber-100 text-amber-600'} rounded-2xl flex items-center justify-center font-black text-lg group-hover/history:scale-110 transition-transform`}>
+                            {score.score}%
+                          </div>
+                          <div className="text-left">
+                            <h4 className="font-bold text-slate-900 group-hover/history:text-emerald-600 transition-colors">{lesson?.title || 'Lição Desconhecida'}</h4>
+                            <div className="flex items-center gap-3 mt-1">
+                              <span className="flex items-center gap-1 text-[10px] text-slate-400 font-black uppercase tracking-widest">
+                                <Calendar size={12} className="opacity-50" /> {date}
+                              </span>
+                              <span className={`w-1 h-1 rounded-full bg-slate-200`} />
+                              <span className="text-[10px] text-slate-400 font-black uppercase tracking-widest">{lesson?.difficulty || 'geral'}</span>
+                            </div>
+                          </div>
+                        </div>
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center ${score.score >= 80 ? 'text-emerald-500' : 'text-amber-500'} opacity-0 group-hover/history:opacity-100 transition-opacity`}>
+                          <Zap size={18} fill="currentColor" />
+                        </div>
+                      </motion.div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Resource Quick Access */}
+          <div className="bento-card p-6 md:p-10 bg-slate-900 text-white overflow-hidden relative">
+            <div className="absolute top-0 right-0 p-8 opacity-10">
+              <Zap size={120} />
+            </div>
+            
+            <h3 className="text-3xl font-black text-white mb-8 flex items-center gap-4 relative z-10 text-left">
+              <div className="w-10 h-10 bg-emerald-500 rounded-xl flex items-center justify-center text-white shadow-lg shadow-emerald-500/20">
+                <Zap size={24} />
+              </div>
+              Atalhos de Estudo
+            </h3>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 relative z-10">
+              {[
+                { 
+                  title: 'Dicionário Pleno', 
+                  desc: 'Consulte milhares de verbetes', 
+                  icon: Search, 
+                  color: 'bg-blue-500'
+                },
+                { 
+                  title: 'Gramática Prática', 
+                  desc: 'As 16 regras sem exceções', 
+                  icon: BookOpen, 
+                  color: 'bg-emerald-500'
+                },
+                { 
+                  title: 'Meus Flashcards', 
+                  desc: 'Revise o que você aprendeu', 
+                  icon: Star, 
+                  color: 'bg-amber-500'
+                }
+              ].map((item) => {
+                const Icon = item.icon;
+                return (
+                  <motion.div 
+                    key={item.title}
+                    whileHover={{ y: -4 }}
+                    className="bg-white/5 border border-white/10 p-6 rounded-[32px] hover:bg-white/10 transition-all cursor-pointer group"
+                  >
+                    <div className={`w-12 h-12 ${item.color} rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-lg`}>
+                      <Icon size={24} />
+                    </div>
+                    <h4 className="font-bold text-lg mb-1 text-left">{item.title}</h4>
+                    <p className="text-slate-400 text-[10px] text-left uppercase font-black tracking-widest">{item.desc}</p>
+                  </motion.div>
+                );
+              })}
             </div>
           </div>
 

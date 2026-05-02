@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   BookOpen, 
@@ -21,17 +21,35 @@ import {
   Bell,
   Flame,
   Trophy,
-  Star
+  Star,
+  Loader2
 } from 'lucide-react';
 import { Hero } from './components/Hero';
-import { Lessons } from './components/Lessons';
-import { LibrarySection } from './components/Library';
-import { Flashcards } from './components/Flashcards';
-import { Dashboard } from './components/Dashboard';
-import { DictionarySearch } from './components/DictionarySearch';
-import { NotificationCenter } from './components/NotificationCenter';
 import { Onboarding } from './components/Onboarding';
 import { Flashcard, SyncQueueItem, UserStats, Badge, AppNotification, NotificationSettings } from './types';
+import { Tooltip } from './components/ui/Tooltip';
+
+// Lazy load large components for better initial loading speed
+const Lessons = lazy(() => import('./components/Lessons').then(m => ({ default: m.Lessons })));
+const LibrarySection = lazy(() => import('./components/Library').then(m => ({ default: m.LibrarySection })));
+const Flashcards = lazy(() => import('./components/Flashcards').then(m => ({ default: m.Flashcards })));
+const Dashboard = lazy(() => import('./components/Dashboard').then(m => ({ default: m.Dashboard })));
+const DictionarySearch = lazy(() => import('./components/DictionarySearch').then(m => ({ default: m.DictionarySearch })));
+const NotificationCenter = lazy(() => import('./components/NotificationCenter').then(m => ({ default: m.NotificationCenter })));
+
+// Loading component for Suspense
+const ComponentLoader = () => (
+  <div className="w-full h-[60vh] flex flex-col items-center justify-center space-y-4">
+    <motion.div
+      animate={{ rotate: 360 }}
+      transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+      className="text-emerald-500"
+    >
+      <Loader2 size={48} />
+    </motion.div>
+    <p className="text-slate-400 font-bold uppercase tracking-widest text-xs animate-pulse">Carregando Módulos...</p>
+  </div>
+);
 
 const BADGES: Badge[] = [
   { id: 'first-step', name: 'Primeiro Passo', description: 'Completou sua primeira lição', icon: '🌱' },
@@ -267,11 +285,11 @@ export default function App() {
     });
   }, [completedLessons.length, userStats.streak]);
 
-  const awardPoints = (amount: number) => {
+  const awardPoints = React.useCallback((amount: number) => {
     setUserStats(prev => ({ ...prev, points: prev.points + amount }));
-  };
+  }, []);
 
-  const handleAddFlashcard = (front: string, back: string, category?: string) => {
+  const handleAddFlashcard = React.useCallback((front: string, back: string, category?: string) => {
     // Simulate AI image generation using a high-quality keyword-based search
     const sanitizedSearch = back.toLowerCase().split(' ')[0].replace(/[^a-z]/g, '');
     const imageUrl = `https://images.unsplash.com/photo-1518173946687-a4c8a9ba332f?q=80&w=800&auto=format&fit=crop&keywords=${sanitizedSearch}`;
@@ -284,19 +302,23 @@ export default function App() {
       imageUrl,
       createdAt: Date.now()
     };
-    const newCards = [newCard, ...flashcards];
-    setFlashcards(newCards);
     
-    // Reward for flashcard creation
-    awardPoints(10);
-    addNotification('Flashcard Criado! 🧠', `Card "${front}" adicionado com imagem ilustrativa.`, 'success');
-    
-    // Check for flashcard badge
-    if (newCards.length >= 10 && !userStats.badges.includes('flash-master')) {
-      setUserStats(prev => ({ ...prev, badges: [...prev.badges, 'flash-master'] }));
-      addNotification('Conquista Desbloqueada! 🧠', 'Mestre dos Flashcards: Criou 10 flashcards!', 'success');
-    }
-  };
+    setFlashcards(prev => {
+      const newCards = [newCard, ...prev];
+      
+      // Reward for flashcard creation - do this outside or via effect to avoid nested state updates if possible, 
+      // but here it's fine since it's a direct user action handler.
+      awardPoints(10);
+      addNotification('Flashcard Criado! 🧠', `Card "${front}" adicionado com imagem ilustrativa.`, 'success');
+      
+      // Check for flashcard badge
+      if (newCards.length >= 10 && !userStats.badges.includes('flash-master')) {
+        setUserStats(s => ({ ...s, badges: [...s.badges, 'flash-master'] }));
+        addNotification('Conquista Desbloqueada! 🧠', 'Mestre dos Flashcards: Criou 10 flashcards!', 'success');
+      }
+      return newCards;
+    });
+  }, [awardPoints, userStats.badges]);
 
   const handleDeleteFlashcard = (id: string) => {
     setFlashcards(prev => prev.filter(c => c.id !== id));
@@ -306,15 +328,43 @@ export default function App() {
     setFlashcards(prev => prev.map(c => c.id === updatedCard.id ? updatedCard : c));
   };
 
-  const handleLessonComplete = (lessonId: string) => {
+  const [lessonProgress, setLessonProgress] = useState<Record<string, number>>(() => {
+    const saved = localStorage.getItem('esperanto_lesson_progress');
+    return saved ? JSON.parse(saved) : {};
+  });
+
+  useEffect(() => {
+    localStorage.setItem('esperanto_lesson_progress', JSON.stringify(lessonProgress));
+  }, [lessonProgress]);
+
+  const handleLessonProgress = (lessonId: string, partIndex: number) => {
+    setLessonProgress(prev => ({ ...prev, [lessonId]: partIndex }));
+    setUserStats(prev => ({ ...prev, lastLessonId: lessonId }));
+  };
+
+  const handleLessonComplete = (lessonId: string, score: number = 100) => {
+    const today = new Date().toISOString().split('T')[0];
+    
+    // Add Score to performance tracking
+    const newScore = { lessonId, score, timestamp: Date.now() };
+    
+    setUserStats(prev => {
+      const nextScores = [...(prev.lessonScores || []), newScore];
+      // Keep only most recent 50 scores for performance
+      const trimmedScores = nextScores.slice(-50);
+      return { ...prev, lessonScores: trimmedScores, lastActivityDate: today };
+    });
+
     if (!completedLessons.includes(lessonId)) {
       const newCompleted = [...completedLessons, lessonId];
       setCompletedLessons(newCompleted);
       localStorage.setItem('esperanto_completed_lessons', JSON.stringify(newCompleted));
       
-      // Award points
-      awardPoints(100);
-      addNotification('Lição Concluída! 📚', 'Você ganhou 100 XP por completar esta lição.', 'success');
+      // Award points with performance bonus
+      const bonus = Math.floor(score / 10);
+      const totalAward = 100 + bonus;
+      awardPoints(totalAward);
+      addNotification('Lição Concluída! 📚', `Você ganhou ${totalAward} XP por completar esta lição com ${score}% de maestria.`, 'success');
 
       if (!isOnline) {
         const newItem = { lessonId, timestamp: Date.now() };
@@ -322,14 +372,33 @@ export default function App() {
         setSyncQueue(newQueue);
         localStorage.setItem('esperanto_sync_queue', JSON.stringify(newQueue));
       }
+    } else {
+      // Re-award minor points for repeating with better score?
+      awardPoints(10);
+      addNotification('Revisão Concluída! ♻️', `Você revisou esta lição com ${score}% de acerto.`, 'info');
     }
+    
+    // Clear progress when lesson is finished
+    setLessonProgress(prev => {
+      const next = { ...prev };
+      delete next[lessonId];
+      return next;
+    });
+  };
+
+  const [autoOpenLessonId, setAutoOpenLessonId] = useState<string | null>(null);
+
+  const handleResumeFromHero = (lessonId: string) => {
+    setAutoOpenLessonId(lessonId);
+    setActiveTab('lessons');
+    setActiveContent('lessons');
   };
 
   const navItems = [
-    { id: 'home', label: 'Início', icon: Sparkles },
-    { id: 'lessons', label: 'Lições Interativas', icon: BookOpen },
-    { id: 'library', label: 'Acervo Digital', icon: Library },
-    { id: 'dashboard', label: 'Conquistas', icon: Award },
+    { id: 'home', label: 'Início', subLabel: 'Destaques', icon: Sparkles },
+    { id: 'lessons', label: 'Estudos', subLabel: 'Lições e Flashcards', icon: BookOpen },
+    { id: 'library', label: 'Acervo', subLabel: 'Dicionário e Gramática', icon: Library },
+    { id: 'dashboard', label: 'Perfil', subLabel: 'Progresso e Medalhas', icon: Award },
   ];
 
   return (
@@ -369,18 +438,31 @@ export default function App() {
                 {navItems.map((item) => {
                   const Icon = item.icon;
                   return (
+                <div key={item.id}>
+                  <Tooltip content={`Ir para ${item.label}`} position="bottom">
                     <button
-                      key={item.id}
-                      onClick={() => setActiveTab(item.id as Tab)}
-                      className={`flex items-center space-x-2 px-5 py-2.5 rounded-full text-sm font-semibold transition-all ${
+                      onClick={() => {
+                        setActiveTab(item.id as Tab);
+                        if (item.id === 'lessons') setAutoOpenLessonId(null);
+                      }}
+                      className={`flex items-center space-x-3 px-6 py-2.5 rounded-2xl text-sm font-semibold transition-all group ${
                         activeTab === item.id 
-                          ? 'bg-slate-900 text-white shadow-lg' 
+                          ? 'bg-slate-900 text-white shadow-xl shadow-slate-200' 
                           : 'text-slate-500 hover:bg-slate-100 hover:text-slate-900'
                       }`}
                     >
-                      <Icon size={18} />
-                      <span>{item.label}</span>
+                      <div className={`p-1.5 rounded-lg transition-colors ${activeTab === item.id ? 'bg-white/10 text-emerald-400' : 'bg-slate-100 text-slate-400 group-hover:text-slate-600'}`}>
+                        <Icon size={18} />
+                      </div>
+                      <div className="flex flex-col items-start leading-none">
+                        <span className="block">{item.label}</span>
+                        <span className={`text-[10px] font-medium mt-0.5 ${activeTab === item.id ? 'text-slate-400' : 'text-slate-400'}`}>
+                          {item.subLabel}
+                        </span>
+                      </div>
                     </button>
+                  </Tooltip>
+                </div>
                   );
                 })}
               </div>
@@ -415,19 +497,23 @@ export default function App() {
                 )}
               </AnimatePresence>
 
-              <div className={`p-1.5 md:p-2 rounded-lg md:rounded-xl border transition-colors ${isOnline ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-red-50 text-red-600 border-red-100'}`}>
-                {isOnline ? <Wifi size={16} className="md:w-[18px] md:h-[18px]" /> : <WifiOff size={16} className="md:w-[18px] md:h-[18px]" />}
-              </div>
+              <Tooltip content={isOnline ? "Conectado" : "Modo Offline"} position="bottom">
+                <div className={`p-1.5 md:p-2 rounded-lg md:rounded-xl border transition-colors ${isOnline ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-red-50 text-red-600 border-red-100'}`}>
+                  {isOnline ? <Wifi size={16} className="md:w-[18px] md:h-[18px]" /> : <WifiOff size={16} className="md:w-[18px] md:h-[18px]" />}
+                </div>
+              </Tooltip>
 
-              <button 
-                onClick={() => setIsNotificationsOpen(true)}
-                className="p-1.5 md:p-2 rounded-lg md:rounded-xl border bg-white text-slate-400 hover:text-slate-900 border-slate-100 transition-all relative"
-              >
-                <Bell size={16} className="md:w-[18px] md:h-[18px]" />
-                {notifications.some(n => !n.read) && (
-                  <span className="absolute top-1 right-1 w-1.5 h-1.5 bg-emerald-500 rounded-full border-2 border-white" />
-                )}
-              </button>
+              <Tooltip content="Notificações" position="bottom">
+                <button 
+                  onClick={() => setIsNotificationsOpen(true)}
+                  className="p-1.5 md:p-2 rounded-lg md:rounded-xl border bg-white text-slate-400 hover:text-slate-900 border-slate-100 transition-all relative"
+                >
+                  <Bell size={16} className="md:w-[18px] md:h-[18px]" />
+                  {notifications.some(n => !n.read) && (
+                    <span className="absolute top-1 right-1 w-1.5 h-1.5 bg-emerald-500 rounded-full border-2 border-white" />
+                  )}
+                </button>
+              </Tooltip>
             </div>
           </div>
         </div>
@@ -446,6 +532,7 @@ export default function App() {
                   whileTap={{ scale: 0.9 }}
                   onClick={() => {
                     setActiveTab(item.id as Tab);
+                    if (item.id === 'lessons') setAutoOpenLessonId(null);
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                   }}
                   className="relative flex flex-col items-center justify-center flex-1 py-1 group h-full"
@@ -510,96 +597,108 @@ export default function App() {
 
       {/* Main Content */}
       <main className="flex-grow overflow-x-hidden w-full relative">
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={activeTab}
-            initial={{ opacity: 0, y: 15 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -15 }}
-            transition={{ duration: 0.35, ease: "easeInOut" }}
-            className="w-full h-full"
-          >
-            {activeTab === 'home' && (
-              <Hero 
-                onStart={() => setActiveTab('lessons')} 
-                onNavigate={(tab) => setActiveTab(tab as Tab)}
-                stats={userStats}
-              />
-            )}
-            {activeTab === 'lessons' && (
-              <div>
-                <div className="max-w-7xl mx-auto px-6 pt-12 flex justify-center">
-                  <div className="bg-white p-1.5 rounded-2xl border border-slate-200 flex gap-1 md:gap-2 shadow-sm overflow-x-auto no-scrollbar max-w-full">
-                    <button 
-                      onClick={() => setActiveContent('lessons')}
-                      className={`px-4 md:px-6 py-2 rounded-xl text-xs md:text-sm font-bold transition-all whitespace-nowrap ${activeContent === 'lessons' ? 'bg-slate-900 text-white shadow-lg' : 'text-slate-500 hover:bg-slate-50'}`}
-                    >
-                      Lições
-                    </button>
-                    <button 
-                      onClick={() => setActiveContent('flashcards')}
-                      className={`px-4 md:px-6 py-2 rounded-xl text-xs md:text-sm font-bold transition-all whitespace-nowrap ${activeContent === 'flashcards' ? 'bg-slate-900 text-white shadow-lg' : 'text-slate-500 hover:bg-slate-50'}`}
-                    >
-                      Flashcards
-                    </button>
+        <Suspense fallback={<ComponentLoader />}>
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={activeTab}
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -15 }}
+              transition={{ duration: 0.35, ease: "easeInOut" }}
+              className="w-full h-full"
+            >
+              {activeTab === 'home' && (
+                <Hero 
+                  onStart={handleResumeFromHero} 
+                  onNavigate={(tab) => setActiveTab(tab as Tab)}
+                  stats={userStats}
+                  lessonProgress={lessonProgress}
+                />
+              )}
+              {activeTab === 'lessons' && (
+                <div>
+                  <div className="max-w-7xl mx-auto px-6 pt-12 flex justify-center">
+                    <div className="bg-white p-1.5 rounded-2xl border border-slate-200 flex gap-1 md:gap-2 shadow-sm overflow-x-auto no-scrollbar max-w-full">
+                      <button 
+                        onClick={() => setActiveContent('lessons')}
+                        className={`px-4 md:px-6 py-2 rounded-xl text-xs md:text-sm font-bold transition-all whitespace-nowrap ${activeContent === 'lessons' ? 'bg-slate-900 text-white shadow-lg' : 'text-slate-500 hover:bg-slate-50'}`}
+                      >
+                        Lições
+                      </button>
+                      <button 
+                        onClick={() => setActiveContent('flashcards')}
+                        className={`px-4 md:px-6 py-2 rounded-xl text-xs md:text-sm font-bold transition-all whitespace-nowrap ${activeContent === 'flashcards' ? 'bg-slate-900 text-white shadow-lg' : 'text-slate-500 hover:bg-slate-50'}`}
+                      >
+                        Flashcards
+                      </button>
+                    </div>
                   </div>
+                  
+                  {activeContent === 'lessons' ? (
+                    <Lessons 
+                      completedLessons={completedLessons} 
+                      downloadedLessons={downloadedLessons}
+                      lessonProgress={lessonProgress}
+                      isOnline={isOnline}
+                      userStats={userStats}
+                      onComplete={handleLessonComplete}
+                      onProgressUpdate={handleLessonProgress}
+                      onAddToFlashcards={handleAddFlashcard}
+                      onDownload={handleDownloadLesson}
+                      onBackToHome={() => setActiveTab('home')}
+                      soundEnabled={notificationSettings.soundEnabled}
+                      autoOpenLessonId={autoOpenLessonId}
+                      onClearAutoOpen={() => setAutoOpenLessonId(null)}
+                    />
+                  ) : (
+                    <Flashcards 
+                      cards={flashcards} 
+                      onAddCard={handleAddFlashcard}
+                      onUpdateCard={handleUpdateFlashcard}
+                      onDeleteCard={handleDeleteFlashcard}
+                      onAwardPoints={awardPoints}
+                      soundEnabled={notificationSettings.soundEnabled}
+                    />
+                  )}
                 </div>
-                
-                {activeContent === 'lessons' ? (
-                  <Lessons 
-                    completedLessons={completedLessons} 
-                    downloadedLessons={downloadedLessons}
-                    isOnline={isOnline}
-                    onComplete={handleLessonComplete}
-                    onAddToFlashcards={handleAddFlashcard}
-                    onDownload={handleDownloadLesson}
-                    onBackToHome={() => setActiveTab('home')}
-                    soundEnabled={notificationSettings.soundEnabled}
-                  />
-                ) : (
-                  <Flashcards 
-                    cards={flashcards} 
-                    onAddCard={handleAddFlashcard}
-                    onUpdateCard={handleUpdateFlashcard}
-                    onDeleteCard={handleDeleteFlashcard}
-                    onAwardPoints={awardPoints}
-                    soundEnabled={notificationSettings.soundEnabled}
-                  />
-                )}
-              </div>
-            )}
-            {activeTab === 'library' && (
-              <LibrarySection 
-                onAddFlashcard={handleAddFlashcard} 
-                onNavigate={(tab, content) => {
-                  setActiveTab(tab as Tab);
-                  if (content) setActiveContent(content);
-                }} 
-              />
-            )}
-            {activeTab === 'dashboard' && (
-              <Dashboard 
-                stats={userStats} 
-                allBadges={BADGES} 
-                settings={notificationSettings}
-                onUpdateSettings={setNotificationSettings}
-              />
-            )}
-          </motion.div>
-        </AnimatePresence>
+              )}
+              {activeTab === 'library' && (
+                <LibrarySection 
+                  onAddFlashcard={handleAddFlashcard} 
+                  onNavigate={(tab, content) => {
+                    setActiveTab(tab as Tab);
+                    if (content) setActiveContent(content);
+                  }} 
+                />
+              )}
+              {activeTab === 'dashboard' && (
+                <Dashboard 
+                  stats={userStats} 
+                  allBadges={BADGES} 
+                  settings={notificationSettings}
+                  onUpdateSettings={setNotificationSettings}
+                />
+              )}
+            </motion.div>
+          </AnimatePresence>
+        </Suspense>
       </main>
 
       {/* Global Dictionary Tool */}
-      <DictionarySearch onAddFlashcard={handleAddFlashcard} />
+      <Suspense fallback={null}>
+        <DictionarySearch onAddFlashcard={handleAddFlashcard} />
+      </Suspense>
 
       {/* Notifications */}
-      <NotificationCenter 
-        notifications={notifications}
-        isOpen={isNotificationsOpen}
-        onClose={() => setIsNotificationsOpen(false)}
-        onMarkAsRead={markNotificationAsRead}
-        onClearAll={clearNotifications}
-      />
+      <Suspense fallback={null}>
+        <NotificationCenter 
+          notifications={notifications}
+          isOpen={isNotificationsOpen}
+          onClose={() => setIsNotificationsOpen(false)}
+          onMarkAsRead={markNotificationAsRead}
+          onClearAll={clearNotifications}
+        />
+      </Suspense>
 
       {/* Footer */}
       <footer className="bg-slate-950 border-t border-emerald-900/20 pt-24 pb-12 text-slate-400 relative overflow-hidden">

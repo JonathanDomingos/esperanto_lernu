@@ -34,10 +34,14 @@ import {
   Search,
   X,
   Sparkles,
-  BookOpen
+  BookOpen,
+  RotateCcw,
+  LayoutGrid,
+  Map as MapIcon
 } from 'lucide-react';
 
 import { soundService } from '../services/soundService';
+import { Tooltip } from './ui/Tooltip';
 
 const renderPartIcon = (name: string) => {
   switch (name) {
@@ -64,33 +68,59 @@ const renderPartIcon = (name: string) => {
 interface GrammarHotspot {
   term: string;
   explanation: string;
+  longExplanation?: string;
+  usageTip?: string;
   examples: string[];
 }
 
 const GRAMMAR_HOTSPOTS: GrammarHotspot[] = [
-  { term: '-o', explanation: 'Sufixo para Substantivos (nomes de coisas, pessoas ou lugares).', examples: ['Domo (Casa)', 'Libro (Livro)', 'Amiko (Amigo)'] },
-  { term: '-a', explanation: 'Sufixo para Adjetivos (qualidades ou características).', examples: ['Bela (Belo)', 'Granda (Grande)', 'Feliĉa (Feliz)'] },
-  { term: '-e', explanation: 'Sufixo para Advérbios (modo como algo acontece).', examples: ['Rapide (Rapidamente)', 'Bone (Bem)', 'Kune (Juntos)'] },
-  { term: '-as', explanation: 'Terminação verbal para o Tempo Presente.', examples: ['Mi manĝas (Eu como)', 'Li lernas (Ele aprende)'] },
+  { 
+    term: '-o', 
+    explanation: 'Sufixo para Substantivos (nomes de coisas, pessoas ou lugares).', 
+    longExplanation: 'Em esperanto, todos os nomes comuns terminam em -o. Isso torna a identificação de substantivos imediata em qualquer frase.',
+    usageTip: 'Se você vir uma palavra terminada em -o, ela é um substantivo!',
+    examples: ['Domo (Casa)', 'Libro (Livro)', 'Amiko (Amigo)'] 
+  },
+  { 
+    term: '-a', 
+    explanation: 'Sufixo para Adjetivos (qualidades ou características).', 
+    longExplanation: 'Adjetivos descrevem substantivos e sempre terminam em -a. Eles concordam em número (-j) e caso (-n) com o substantivo que qualificam.',
+    usageTip: 'Adjetivos podem vir antes ou depois do substantivo.',
+    examples: ['Bela (Belo)', 'Granda (Grande)', 'Feliĉa (Feliz)'] 
+  },
+  { 
+    term: '-e', 
+    explanation: 'Sufixo para Advérbios (modo como algo acontece).', 
+    longExplanation: 'Advérbios derivados terminam em -e. Eles modificam verbos, adjetivos ou outros advérbios.',
+    usageTip: 'Diferente de muitos idiomas, o esperanto tem uma terminação única e regular para advérbios.',
+    examples: ['Rapide (Rapidamente)', 'Bone (Bem)', 'Kune (Juntos)'] 
+  },
+  { 
+    term: '-as', 
+    explanation: 'Terminação verbal para o Tempo Presente.', 
+    longExplanation: 'Indica uma ação que ocorre no momento da fala ou um estado habitual.',
+    usageTip: 'Não muda conforme a pessoa (Mi lernas, Li lernas, Ili lernas).',
+    examples: ['Mi manĝas (Eu como)', 'Li lernas (Ele aprende)'] 
+  },
   { term: 'amas', explanation: 'O verbo "Amar" no presente. A terminação -as indica que a ação acontece agora ou habitualmente.', examples: ['Mi amas vin (Eu te amo)'] },
-  { term: '-is', explanation: 'Terminação verbal para o Tempo Passado.', examples: ['Mi manĝis (Eu comi)', 'Ili iris (Eles foram)'] },
-  { term: '-os', explanation: 'Terminação verbal para o Tempo Futuro.', examples: ['Ni vojaĝos (Nós viajaremos)', 'Ŝi laboros (Ela trabalhará)'] },
-  { term: '-us', explanation: 'Terminação verbal para o Condicional (faria, seria).', examples: ['Mi estus (Eu seria/fosse)', 'Vi amus (Você amaria)'] },
-  { term: '-u', explanation: 'Terminação verbal para o Volitivo (ordens, desejos, pedidos).', examples: ['Venu! (Venha)', 'Lernu! (Aprendam)'] },
-  { term: '-n', explanation: 'O Acusativo. Indica o objeto direto (quem recebe a ação).', examples: ['Mi vidas birdon (Eu vejo um pássaro)', 'Li amas vin (Ele ama você)'] },
-  { term: '-j', explanation: 'Sufixo do Plural.', examples: ['Birdoj (Pássaros)', 'Belaj floroj (Belas flores)'] },
-  { term: '-in-', explanation: 'Sufixo para o gênero Feminino.', examples: ['Patrino (Mãe)', 'Instruistino (Professora)'] },
-  { term: '-eg-', explanation: 'Aumentativo (intensifica o sentido).', examples: ['Domego (Casarão)', 'Bonege (Muito bem)'] },
-  { term: '-et-', explanation: 'Diminutivo (reduz o sentido).', examples: ['Dometo (Casinha)', 'Vireto (Homenzinho)'] },
-  { term: '-ar-', explanation: 'Sufixo Coletivo (grupo de coisas iguais).', examples: ['Arbaro (Floresta)', 'Vortaro (Dicionário)'] },
-  { term: 'mal-', explanation: 'Prefixo que inverte o sentido da palavra (o oposto).', examples: ['Bona (Bom) -> Malbona (Mau)', 'Granda (Grande) -> Malgranda (Pequeno)'] },
-  { term: 'bo-', explanation: 'Prefixo indicando parentesco por casamento/afinidade.', examples: ['Bopatro (Sogro)', 'Bofrato (Cunhado)'] },
-  { term: 'ge-', explanation: 'Prefixo que indica ambos os sexos juntos.', examples: ['Gepatroj (Pais - pai e mãe)', 'Gefratoj (Irmãos e irmãs)'] },
-  { term: 're-', explanation: 'Prefixo indicando repetição ou retorno.', examples: ['Reveni (Retornar)', 'Refari (Refazer)'] },
-  { term: '-ilo', explanation: 'Sufixo para ferramenta, instrumento ou meio.', examples: ['Tranĉilo (Faca - ferramenta de cortar)', 'Veturilo (Veículo)'] },
-  { term: '-ejo', explanation: 'Sufixo para lugar ou estabelecimento.', examples: ['Lernejo (Escola)', 'Vendejo (Loja)'] },
-  { term: '-isto', explanation: 'Sufixo para profissão ou ocupação habitual.', examples: ['Dentisto (Dentista)', 'Instruisto (Professor)'] },
-  { term: '-ano', explanation: 'Sufixo para membro ou habitante de um lugar/grupo.', examples: ['Kristano (Cristão)', 'Urbano (Citadino)'] },
+  { term: '-is', explanation: 'Terminação verbal para o Tempo Passado.', usageTip: 'Indica uma ação que já aconteceu e terminou.', examples: ['Mi manĝis (Eu comi)', 'Ili iris (Eles foram)'] },
+  { term: '-os', explanation: 'Terminação verbal para o Tempo Futuro.', usageTip: 'Indica uma ação que ainda vai acontecer.', examples: ['Ni vojaĝos (Nós viajaremos)', 'Ŝi laboros (Ela trabalhará)'] },
+  { term: '-us', explanation: 'Terminação verbal para o Condicional (faria, seria).', usageTip: 'Usado para situações hipotéticas ou educadas.', examples: ['Mi estus (Eu seria/fosse)', 'Vi amus (Você amaria)'] },
+  { term: '-u', explanation: 'Terminação verbal para o Volitivo (ordens, desejos, pedidos).', usageTip: 'Dica: Termina o imperativo e também orações de desejo.', examples: ['Venu! (Venha)', 'Lernu! (Aprendam)'] },
+  { term: '-n', explanation: 'O Acusativo. Indica o objeto direto (quem recebe a ação).', usageTip: 'Importante: Mostra quem está sofrendo a ação na frase.', examples: ['Mi vidas birdon (Eu vejo um pássaro)', 'Li amas vin (Ele ama você)'] },
+  { term: '-j', explanation: 'Sufixo do Plural.', usageTip: 'O plural no Esperanto é sempre feito com a letra J.', examples: ['Birdoj (Pássaros)', 'Belaj floroj (Belas flores)'] },
+  { term: '-in-', explanation: 'Sufixo para o gênero Feminino.', usageTip: 'Transforma uma raiz masculina ou neutra em feminina.', examples: ['Patrino (Mãe)', 'Instruistino (Professora)'] },
+  { term: '-eg-', explanation: 'Aumentativo (intensifica o sentido).', usageTip: 'Equivale ao "ão" ou "íssimo" em português.', examples: ['Domego (Casarão)', 'Bonege (Muito bem)'] },
+  { term: '-et-', explanation: 'Diminutivo (reduz o sentido).', usageTip: 'Equivale ao "inho" em português.', examples: ['Dometo (Casinha)', 'Vireto (Homenzinho)'] },
+  { term: '-ar-', explanation: 'Sufixo Coletivo (grupo de coisas iguais).', usageTip: 'Indica um conjunto de seres da mesma espécie.', examples: ['Arbaro (Floresta)', 'Vortaro (Dicionário)'] },
+  { term: 'mal-', explanation: 'Prefixo que inverte o sentido da palavra (o oposto).', usageTip: 'O prefixo mais famoso do Esperanto! Evita decorar antônimos.', examples: ['Bona (Bom) -> Malbona (Mau)', 'Granda (Grande) -> Malgranda (Pequeno)'] },
+  { term: 'bo-', explanation: 'Prefixo indicando parentesco por casamento/afinidade.', usageTip: 'Equivale ao "sogro/sogra/cunhado", etc., por via de casamento.', examples: ['Bopatro (Sogro)', 'Bofrato (Cunhado)'] },
+  { term: 'ge-', explanation: 'Prefixo que indica ambos os sexos juntos.', usageTip: 'Muito usado no plural para referir-se ao grupo misto.', examples: ['Gepatroj (Pais - pai e mãe)', 'Gefratoj (Irmãos e irmãs)'] },
+  { term: 're-', explanation: 'Prefixo indicando repetição ou retorno.', usageTip: 'Indica que a ação acontece novamente.', examples: ['Reveni (Retornar)', 'Refari (Refazer)'] },
+  { term: '-ilo', explanation: 'Sufixo para ferramenta, instrumento ou meio.', usageTip: 'Dica: Quase todo instrumento termina em -ilo no Esperanto.', examples: ['Tranĉilo (Faca - ferramenta de cortar)', 'Veturilo (Veículo)'] },
+  { term: '-ejo', explanation: 'Sufixo para lugar ou estabelecimento.', usageTip: 'Indica o local onde a ação da raiz acontece.', examples: ['Lernejo (Escola)', 'Vendejo (Loja)'] },
+  { term: '-isto', explanation: 'Sufixo para profissão ou ocupação habitual.', usageTip: 'Indica a pessoa que se dedica profissionalmente a algo.', examples: ['Dentisto (Dentista)', 'Instruisto (Professor)'] },
+  { term: '-ano', explanation: 'Sufixo para membro ou habitante de um lugar/grupo.', usageTip: 'Indica pertencimento a uma comunidade ou local.', examples: ['Kristano (Cristão)', 'Urbano (Citadino)'] },
 ];
 
 function InteractiveText({ text }: { text: string }) {
@@ -100,12 +130,14 @@ function InteractiveText({ text }: { text: string }) {
   const sortedHotspots = [...GRAMMAR_HOTSPOTS].sort((a, b) => b.term.length - a.term.length);
   
   const escapeRegExp = (string: string) => string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  
+  // We want to match whole words or specific suffixes/prefixes
   const regex = new RegExp(`(${sortedHotspots.map(h => escapeRegExp(h.term)).join('|')})`, 'gi');
 
   const parts = text.split(regex);
 
   return (
-    <div className="relative inline">
+    <span className="relative inline">
       {parts.map((part, i) => {
         const hotspot = sortedHotspots.find(h => h.term.toLowerCase() === part.toLowerCase());
         if (hotspot) {
@@ -116,7 +148,11 @@ function InteractiveText({ text }: { text: string }) {
                   e.stopPropagation();
                   setActiveHotspot(activeHotspot?.term === hotspot.term ? null : hotspot);
                 }}
-                className="interactive-hotspot mx-0.5 text-emerald-800"
+                className={`interactive-hotspot mx-0.5 transition-all duration-300 ${
+                  activeHotspot?.term === hotspot.term 
+                    ? 'text-emerald-900 bg-emerald-100 shadow-sm ring-1 ring-emerald-200' 
+                    : 'text-emerald-700 hover:text-emerald-900 border-b-2 border-dashed border-emerald-300 hover:border-emerald-500 hover:bg-emerald-50'
+                } rounded-sm px-0.5 font-bold cursor-help`}
               >
                 {part}
               </button>
@@ -142,7 +178,21 @@ function InteractiveText({ text }: { text: string }) {
                         <span className="font-black text-emerald-700 uppercase tracking-widest text-[10px]">Dica Rápida</span>
                       </div>
                       <h4 className="text-slate-900 font-bold mb-2">Gramática: "{hotspot.term}"</h4>
-                      <p className="text-slate-600 text-sm mb-4 leading-relaxed">{hotspot.explanation}</p>
+                      <p className="text-slate-600 text-sm mb-3 leading-relaxed">{hotspot.explanation}</p>
+                      
+                      {hotspot.longExplanation && (
+                        <p className="text-slate-500 text-xs mb-4 italic leading-relaxed border-l-2 border-emerald-100 pl-3">
+                          {hotspot.longExplanation}
+                        </p>
+                      )}
+
+                      {hotspot.usageTip && (
+                        <div className="bg-amber-50 p-3 rounded-xl mb-4 border border-amber-100/50">
+                          <span className="text-[10px] font-black text-amber-700 uppercase tracking-widest block mb-1">Dica de Uso</span>
+                          <p className="text-slate-600 text-[11px] font-medium">{hotspot.usageTip}</p>
+                        </div>
+                      )}
+
                       <div className="space-y-1.5">
                         <span className="text-[10px] font-bold text-slate-400 border-b border-slate-100 pb-1 mb-2 block uppercase tracking-tighter">Exemplos Adicionais</span>
                         {hotspot.examples.map((ex, idx) => (
@@ -161,7 +211,7 @@ function InteractiveText({ text }: { text: string }) {
         }
         return <span key={i}>{part}</span>;
       })}
-    </div>
+    </span>
   );
 }
 function AffixExplorer() {
@@ -521,7 +571,36 @@ function AffixExplorer() {
                 </div>
 
                 <div className="space-y-4">
-                  <h4 className="text-xs font-black uppercase tracking-widest text-slate-400 pl-2">Passo a Passo Visual</h4>
+                  <h4 className="text-xs font-black uppercase tracking-widest text-slate-400 pl-2">Breakdown Estrutural</h4>
+                  <div className="flex flex-wrap items-center gap-2 p-6 bg-slate-50 rounded-[2.5rem] border border-slate-100/50">
+                    {aiBreakdown.map((item, idx) => (
+                      <React.Fragment key={idx}>
+                        <motion.div 
+                          initial={{ opacity: 0, scale: 0.8 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          transition={{ delay: idx * 0.1 }}
+                          className="flex flex-col items-center gap-1"
+                        >
+                          <div className={`px-4 py-2 rounded-xl text-sm font-black shadow-sm border ${
+                            idx === 0 ? 'bg-emerald-500 text-white border-emerald-400' :
+                            item.added.startsWith('mal') || item.added.startsWith('re') || item.added.startsWith('ge') ? 'bg-indigo-500 text-white border-indigo-400' :
+                            idx === aiBreakdown.length - 1 ? 'bg-slate-800 text-white border-slate-700' :
+                            'bg-amber-500 text-white border-amber-400'
+                          }`}>
+                            {item.step}
+                          </div>
+                          {idx < aiBreakdown.length - 1 && (
+                            <span className="text-[8px] font-black text-slate-300 uppercase tracking-tighter">Torna-se</span>
+                          )}
+                        </motion.div>
+                        {idx < aiBreakdown.length - 1 && (
+                          <ChevronRight size={14} className="text-slate-300" />
+                        )}
+                      </React.Fragment>
+                    ))}
+                  </div>
+
+                  <h4 className="text-xs font-black uppercase tracking-widest text-slate-400 pl-2">Passo a Passo Lógico</h4>
                   <div className="space-y-3 relative before:absolute before:left-[19px] before:top-4 before:bottom-4 before:w-0.5 before:bg-slate-100">
                     {aiBreakdown.map((item, idx) => (
                       <div key={idx} className="flex gap-4 relative z-10 group">
@@ -583,7 +662,7 @@ function AffixExplorer() {
 }
 
 
-import { Lesson, LessonPart } from '../types';
+import { Lesson, LessonPart, UserStats } from '../types';
 
 const MANUAL_LESSONS: Lesson[] = [
   {
@@ -639,7 +718,7 @@ const MANUAL_LESSONS: Lesson[] = [
       { type: 'example', content: 'O infinitivo (forma base) termina em -i. "Lerni" (Aprender), "Manĝi" (Comer), "Labori" (Trabalhar).' },
       { type: 'text', content: 'Basta trocar o -i por uma das 3 terminações de tempo universal:' },
       { type: 'example', content: 'Presente: -as. "Mi lernas" (Eu aprendo), "Mi amas vin" (Eu te amo).' },
-      { type: 'combine', content: 'Como dizer "Eu como" (Presente)?', root: 'Mi manĝ', targetMeaning: 'Eu como', options: ['-as', '-is', '-os'], correctAnswer: '-as', explanation: '-as é a marca do presente.' },
+      { type: 'combine', content: 'Como dizer "Eu como" (Presente)?', root: 'Mi manĝ', targetMeaning: 'Eu como', options: ['-as', '-is', '-os'], correctAnswer: '-as', explanation: '-as é o sufixo para o tempo presente. Ex: Mi manĝas (Eu como).' },
       { type: 'example', content: 'Passado: -is. "Mi lernis" (Eu aprendi), "Ili lernis" (Eles aprenderam).' },
       { type: 'combine', content: 'Como dizer "Eu aprendi" (Passado)?', root: 'Mi lern', targetMeaning: 'Eu aprendi', options: ['-as', '-is', '-os'], correctAnswer: '-is', explanation: '-is é a marca do passado.' },
       { type: 'example', content: 'Futuro: -os. "Mi lernos" (Eu aprenderei), "Vi lernos" (Você aprenderá).' },
@@ -683,6 +762,7 @@ const MANUAL_LESSONS: Lesson[] = [
     description: 'A ferramenta secreta para liberdade total na ordem das palavras.',
     parts: [
       { type: 'text', content: 'O sufixo -n é usado para marcar o "Objeto Direto" — ou seja, quem ou o que recebe a ação do verbo.' },
+      { type: 'question', content: 'Qual destas frases usa o acusativo INCORRETAMENTE?', options: ['Mi vidas domon', 'Mi vidas la domo', 'Domon vidas mi'], correctAnswer: 'Mi vidas la domo', explanation: 'O objeto (casa) deve obrigatoriamente receber o -n do acusativo, não importa a ordem das palavras.' },
       { type: 'example', content: '"La hundo amas la katon" (O cão ama o gato). O gato é quem recebe o amor, por isso leva o -n.' },
       { type: 'combine', content: 'Complete: "Mi vidas la domo..." (Eu vejo a casa):', root: 'domo', targetMeaning: 'casa (objeto)', options: ['-n', '-j', '-o'], correctAnswer: '-n', explanation: 'O objeto da visão recebe o acusativo -n.' },
       { type: 'example', content: '"La katon amas la hundo" - O sentido é exatamente o mesmo! O -n nos diz quem é o objeto, não importa a ordem.' },
@@ -820,7 +900,24 @@ const MANUAL_LESSONS: Lesson[] = [
       { type: 'question', content: 'O que significaria "Malsanulino"?', options: ['Uma mulher saudável', 'Uma mulher doente', 'Um hospital feminino'], correctAnswer: 'Uma mulher doente', explanation: 'Mal- (não) + san (saudável) + ul (pessoa) + in (mulher) + o (substantivo).' },
       { type: 'fill-blank', content: 'A palavra para "Ferramenta de limpeza" seria _______ilo.', options: ['Purig', 'Malsan', 'Lern'], correctAnswer: 'Purig', explanation: 'Pura (limpo) + ig (tornar) = Purigi (limpar). Purigilo = Ferramenta de limpar.' },
       { type: 'text', content: 'Veja a palavra "Arbaro" (Floresta). Se adicionarmos "et", temos "Arbareto" (Bosque). Se adicionarmos "eg", temos "Arbarego" (Selva densa).' },
+      { type: 'combine', content: 'Como formar "Peixe fêmea pequeno"? (Fiŝo = Peixe)', root: 'Fiŝ', targetMeaning: 'Peixinha', options: ['-et-in-o', '-eg-in-o', '-in-et-o'], correctAnswer: '-in-et-o', explanation: 'Geralmente colocamos o sexo (-in-) antes da intensidade (-et/-eg) em nomes de animais, mas a ordem pode variar para ênfase. A forma mais comum é peixe fêmea pequeno.' },
       { type: 'order-sentences', content: 'Construa a frase: "O cachorro grande corre rápido"', pieces: ['La', 'granda', 'hundo', 'kuras', 'rapide'], correctAnswer: 'La granda hundo kuras rapide', explanation: 'La (O) + granda (grande) + hundo (cachorro) + kuras (corre) + rapide (rapidamente).' }
+    ]
+  },
+  {
+    id: 'l14',
+    title: 'Avançado: Verbos Derivados e Vozes',
+    description: 'Transforme qualquer palavra em ação ou mude o foco da frase com -ig- e -iĝ-.',
+    difficulty: 'advanced',
+    parts: [
+      { type: 'text', content: 'Os sufixos -ig- e -iĝ- são os motores da flexibilidade verbal do Esperanto.' },
+      { type: 'text', content: '-ig- (Transitivo): Tornar algo, fazer com que algo aconteça.' },
+      { type: 'example', content: 'Pura (Limpo) -> Purigi (Limpar/Tornar limpo). Morti (Morrer) -> Mortigi (Matar).' },
+      { type: 'fill-blank', content: 'Se "Lerni" é aprender, "_______i" seria ensinar (fazer aprender).', options: ['Lernig', 'Lerniĝ', 'Lernet'], correctAnswer: 'Lernig', explanation: '-ig- indica ação causada em outro (tornar instruído).' },
+      { type: 'text', content: '-iĝ- (Intransitivo): Tornar-se, vir a ser.' },
+      { type: 'example', content: 'Sido (Assento) -> Sidiĝi (Sentar-se). Ruĝa (Vermelho) -> Ruĝiĝi (Ficar vermelho/enrubescer).' },
+      { type: 'question', content: 'O que significa "Malsaniĝi"?', options: ['Curar alguém', 'Ficar doente', 'Ser médico'], correctAnswer: 'Ficar doente', explanation: 'Mal- (não) + san (saúde) + iĝ (tornar-se) + i (verbo) = Tornar-se não saudável.' },
+      { type: 'order-sentences', content: 'Ordene: "Eu me sento na cadeira"', pieces: ['Mi', 'sidiĝas', 'sur', 'la', 'seĝo'], correctAnswer: 'Mi sidiĝas sur la seĝo', explanation: 'Mi (Eu) + sidiĝas (torno-me sentado) + sur la seĝo (na cadeira).' }
     ]
   }
 ];
@@ -1099,10 +1196,24 @@ const ADVANCED_LESSONS: Lesson[] = [
       { type: 'question', content: 'Por que o Esperanto é bom para poesia?', options: ['Ordem flexível e sufixos regulares', 'Tem poucas palavras', 'É uma língua antiga'], correctAnswer: 'Ordem flexível e sufixos regulares', explanation: 'A flexibilidade gramatical permite métricas e rimas muito criativas.' },
       { type: 'question', content: 'O que o acusativo (-n) permite em termos de estilo?', options: ['Rimar melhor', 'Mudar a ordem das palavras sem mudar o sentido', 'Falar mais rápido'], correctAnswer: 'Mudar a ordem das palavras sem mudar o sentido', explanation: 'O -n marca o objeto, permitindo ordens como OVS ou VOS mantendo a clareza.' }
     ]
+  },
+  {
+    id: 'adv5',
+    title: 'Mestre das Palavras: Oficina de Afixos',
+    description: 'Transforme-se em um arquiteto da língua. Aprenda a descompor e construir palavras complexas usando a lógica infinita do Esperanto.',
+    difficulty: 'advanced',
+    parts: [
+      { type: 'text', content: 'Nesta oficina avançada, você verá como o Esperanto funciona como um sistema modular. Uma única raiz pode gerar dezenas de conceitos relacionados apenas colando afixos.' },
+      { type: 'icon', content: 'Engenharia Linguística', iconName: 'code' },
+      { type: 'text', content: 'Use o Laboratório de Afixos abaixo para experimentar. Combine uma raiz com prefixos e sufixos, e peça para nossa IA analisar a lógica por trás da sua criação.' },
+      { type: 'affix-explorer', content: '' },
+      { type: 'text', content: 'Você percebeu como a ordem dos sufixos altera o sentido? Por exemplo, "Lernejo" é lugar de aprender, mas "Lernisto" é a pessoa que faz a ação habitualmente.' },
+      { type: 'question', content: 'Qual seria o significado mais provável de "Malsanulejo"?', options: ['Um Hospital (Lugar de pessoas doentes)', 'Um Consultório Médico', 'Uma farmácia'], correctAnswer: 'Um Hospital (Lugar de pessoas doentes)', explanation: 'Mal (oposto) + San (saúde) + ul (pessoa) + ej (lugar) + o (substantivo).' }
+    ]
   }
 ];
 
-const SAMPLE_LESSONS: Lesson[] = [
+export const SAMPLE_LESSONS: Lesson[] = [
   ...MANUAL_LESSONS.map(l => {
     const idNum = parseInt(l.id.substring(1));
     let difficulty: 'beginner' | 'intermediate' | 'advanced' = 'beginner';
@@ -1117,12 +1228,174 @@ const SAMPLE_LESSONS: Lesson[] = [
 interface LessonsProps {
   completedLessons: string[];
   downloadedLessons: string[];
+  lessonProgress: Record<string, number>;
   isOnline: boolean;
-  onComplete: (lessonId: string) => void;
+  userStats: UserStats;
+  onComplete: (lessonId: string, score: number) => void;
+  onProgressUpdate: (lessonId: string, partIndex: number) => void;
   onAddToFlashcards: (front: string, back: string, category?: string) => void;
   onDownload: (lessonId: string) => void;
   onBackToHome: () => void;
   soundEnabled?: boolean;
+  autoOpenLessonId?: string | null;
+  onClearAutoOpen?: () => void;
+}
+
+interface TutorialStep {
+  targetId: string;
+  title: string;
+  content: string;
+  position: 'top' | 'bottom' | 'left' | 'right';
+}
+
+const LESSON_TUTORIAL_STEPS: TutorialStep[] = [
+  {
+    targetId: 'lesson-progress-container',
+    title: 'Seu Progresso',
+    content: 'Aqui você acompanha o quanto já percorreu desta lição. Concluir as partes ajuda a fixar o conhecimento!',
+    position: 'bottom'
+  },
+  {
+    targetId: 'lesson-content',
+    title: 'Conteúdo da Lição',
+    content: 'Leia as explicações e exemplos. As palavras destacadas em verde podem ser clicadas para ver dicas gramaticais!',
+    position: 'top'
+  },
+  {
+    targetId: 'lesson-interaction',
+    title: 'Desafios Interativos',
+    content: 'Quando surgir um exercício, responda corretamente para poder avançar. Errar faz parte do aprendizado!',
+    position: 'top'
+  },
+  {
+    targetId: 'lesson-nav',
+    title: 'Navegação',
+    content: 'Use estes botões para avançar quando estiver pronto ou voltar para revisar partes anteriores.',
+    position: 'top'
+  }
+];
+
+function TutorialOverlay({ 
+  activeStep, 
+  onNext, 
+  onSkip, 
+  isLast 
+}: { 
+  activeStep: TutorialStep; 
+  onNext: () => void; 
+  onSkip: () => void;
+  isLast: boolean;
+}) {
+  const [rect, setRect] = useState<DOMRect | null>(null);
+
+  useEffect(() => {
+    let rafId: number;
+    
+    const updateRect = () => {
+      let el = document.getElementById(activeStep.targetId);
+      // Fallback to content if interaction element isn't in DOM (e.g., on a non-interactive part)
+      if (!el && activeStep.targetId === 'lesson-interaction') {
+        el = document.getElementById('lesson-content');
+      }
+      if (el) {
+        const newRect = el.getBoundingClientRect();
+        // Update rect if significantly different
+        setRect(newRect);
+      }
+      rafId = requestAnimationFrame(updateRect);
+    };
+
+    updateRect();
+    return () => cancelAnimationFrame(rafId);
+  }, [activeStep]);
+
+  // Use a default rect in center if not found yet to prevent disappearing
+  const effectiveRect = rect || {
+    top: window.innerHeight / 2 - 50,
+    left: window.innerWidth / 2 - 50,
+    width: 100,
+    height: 100
+  } as DOMRect;
+
+  const padding = 12;
+  const spotlightStyle = {
+    top: effectiveRect.top - padding,
+    left: effectiveRect.left - padding,
+    width: effectiveRect.width + padding * 2,
+    height: effectiveRect.height + padding * 2,
+  };
+
+  return (
+    <div className="fixed inset-0 z-[200] pointer-events-none">
+      {/* Dimmed Background with Hole */}
+      <div 
+        className="absolute inset-0 bg-slate-950/60 transition-opacity duration-500"
+        style={{
+          clipPath: `polygon(
+            0% 0%, 
+            0% 100%, 
+            ${spotlightStyle.left}px 100%, 
+            ${spotlightStyle.left}px ${spotlightStyle.top}px, 
+            ${spotlightStyle.left + spotlightStyle.width}px ${spotlightStyle.top}px, 
+            ${spotlightStyle.left + spotlightStyle.width}px ${spotlightStyle.top + spotlightStyle.height}px, 
+            ${spotlightStyle.left}px ${spotlightStyle.top + spotlightStyle.height}px, 
+            ${spotlightStyle.left}px 100%, 
+            100% 100%, 
+            100% 0%
+          )`
+        }}
+      />
+
+      {/* Spotlight Border */}
+      <motion.div
+        layoutId="spotlight"
+        className="absolute border-2 border-emerald-400 rounded-2xl shadow-[0_0_0_9999px_rgba(15,23,42,0.6)]"
+        initial={false}
+        animate={spotlightStyle}
+        transition={{ type: 'spring', bounce: 0.2, duration: 0.6 }}
+      />
+
+      {/* Tooltip Content */}
+      <motion.div
+        initial={{ opacity: 0, scale: 0.9, y: 10 }}
+        animate={{ 
+          opacity: 1, 
+          scale: 1, 
+          y: 0,
+          top: activeStep.position === 'bottom' ? spotlightStyle.top + spotlightStyle.height + 20 : undefined,
+          bottom: activeStep.position === 'top' ? (window.innerHeight - spotlightStyle.top) + 20 : undefined,
+          left: rect.left + rect.width / 2,
+          translateX: '-50%'
+        }}
+        className="absolute z-10 w-72 bg-white rounded-3xl shadow-2xl p-6 pointer-events-auto"
+      >
+        <h4 className="text-lg font-black text-slate-900 mb-2">{activeStep.title}</h4>
+        <p className="text-slate-500 text-sm font-medium mb-6 leading-relaxed">{activeStep.content}</p>
+        
+        <div className="flex items-center justify-between">
+          <button 
+            onClick={onSkip}
+            className="text-slate-400 text-xs font-bold hover:text-slate-600 transition-colors"
+          >
+            Pular Tutorial
+          </button>
+          <button 
+            onClick={onNext}
+            className="bg-emerald-600 text-white px-5 py-2 rounded-xl text-xs font-bold hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-600/20"
+          >
+            {isLast ? 'Entendi!' : 'Próximo'}
+          </button>
+        </div>
+        
+        {/* Triangle arrow */}
+        <div 
+          className={`absolute left-1/2 -translate-x-1/2 w-4 h-4 bg-white rotate-45 ${
+            activeStep.position === 'bottom' ? '-top-2' : '-bottom-2'
+          }`}
+        />
+      </motion.div>
+    </div>
+  );
 }
 
 interface GrammarQuizQuestion {
@@ -1306,20 +1579,232 @@ const VERB_PRACTICE_QUESTIONS: GrammarQuizQuestion[] = [
   }
 ];
 
+interface LessonMapSectionProps {
+  lessons: Lesson[];
+  completedLessons: string[];
+  lessonProgress: Record<string, number>;
+  onSelectLesson: (lesson: Lesson) => void;
+  levelColor: string;
+}
+
+function LessonMapSection({ lessons, completedLessons, lessonProgress, onSelectLesson, levelColor }: LessonMapSectionProps) {
+  const [peekingLesson, setPeekingLesson] = useState<Lesson | null>(null);
+  const nextLessonId = lessons.find(l => !completedLessons.includes(l.id))?.id;
+
+  return (
+    <div className="relative py-12 flex flex-col items-center min-h-[600px] bg-slate-50/30 rounded-[3rem] border border-slate-100/50 overflow-hidden">
+      <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'radial-gradient(#000 1px, transparent 1px)', backgroundSize: '30px 30px' }} />
+      
+      <div className="relative z-10 w-full max-w-2xl px-6">
+        <div className="flex flex-col items-center gap-24 relative">
+          {/* Path SVG */}
+          <svg className="absolute top-0 left-0 w-full h-full pointer-events-none" style={{ minHeight: lessons.length * 150 }}>
+            <defs>
+              <linearGradient id="pathGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stopColor={levelColor} stopOpacity="0.2" />
+                <stop offset="100%" stopColor={levelColor} stopOpacity="0.1" />
+              </linearGradient>
+            </defs>
+            {lessons.map((_, i) => {
+              if (i === lessons.length - 1) return null;
+              const x1 = 50 + (i % 2 === 0 ? 25 : -25);
+              const x2 = 50 + ((i + 1) % 2 === 0 ? 25 : -25);
+              const y1 = i * 160 + 40;
+              const y2 = (i + 1) * 160 + 40;
+              
+              // Bezier curve for a winding path
+              const cx1 = x1;
+              const cy1 = y1 + 80;
+              const cx2 = x2;
+              const cy2 = y2 - 80;
+              
+              const isCompleted = completedLessons.includes(lessons[i].id);
+              const isFullyCompleted = isCompleted && completedLessons.includes(lessons[i+1].id);
+              const isPathwayToNext = lessons[i+1].id === nextLessonId && isCompleted;
+
+              return (
+                <g key={`path-group-${i}`}>
+                  <path
+                    d={`M ${x1}% ${y1} C ${cx1}% ${cy1}, ${cx2}% ${cy2}, ${x2}% ${y2}`}
+                    stroke="#e2e8f0"
+                    strokeWidth="8"
+                    fill="none"
+                    strokeLinecap="round"
+                  />
+                  {(isFullyCompleted || isPathwayToNext) && (
+                    <motion.path
+                      initial={{ pathLength: 0 }}
+                      animate={{ pathLength: 1 }}
+                      transition={{ duration: 1, delay: i * 0.1 }}
+                      d={`M ${x1}% ${y1} C ${cx1}% ${cy1}, ${cx2}% ${cy2}, ${x2}% ${y2}`}
+                      stroke={levelColor}
+                      strokeWidth="8"
+                      fill="none"
+                      strokeLinecap="round"
+                      strokeDasharray={isPathwayToNext ? "12 12" : "none"}
+                      className={isPathwayToNext ? "animate-pulse" : ""}
+                    />
+                  )}
+                </g>
+              );
+            })}
+          </svg>
+
+          {lessons.map((lesson, i) => {
+            const isCompleted = completedLessons.includes(lesson.id);
+            const isNext = lesson.id === nextLessonId;
+            const isLocked = !isCompleted && !isNext;
+            const progress = lessonProgress[lesson.id];
+            const hasStarted = progress !== undefined && progress > 0;
+            
+            const xPos = i % 2 === 0 ? '25%' : '-25%';
+
+            return (
+              <div 
+                key={lesson.id} 
+                className="relative z-20 flex flex-col items-center"
+                style={{ transform: `translateX(${xPos})` }}
+              >
+                <div className="relative group">
+                  <motion.button
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => {
+                      if (!isLocked) {
+                        onSelectLesson(lesson);
+                      } else {
+                        setPeekingLesson(lesson);
+                      }
+                    }}
+                    className={`w-20 h-20 rounded-[2rem] flex items-center justify-center transition-all shadow-xl relative ${
+                      isCompleted 
+                        ? `bg-white border-4 border-emerald-500 text-emerald-600` 
+                        : isNext
+                          ? `${levelColor === '#10b981' ? 'bg-emerald-600' : levelColor === '#2563eb' ? 'bg-blue-600' : 'bg-purple-600'} text-white ring-8 ring-white shadow-2xl`
+                          : 'bg-white border-4 border-slate-200 text-slate-300'
+                    }`}
+                  >
+                    {isCompleted ? (
+                      <CheckCircle2 size={32} className="fill-emerald-50" />
+                    ) : isLocked ? (
+                      <BookOpen size={28} />
+                    ) : (
+                      <Play size={28} className="fill-current ml-1" />
+                    )}
+                    
+                    {isNext && (
+                      <motion.div
+                        layoutId="activeGlow"
+                        className="absolute inset-0 rounded-[2rem] bg-current opacity-20 blur-xl"
+                        animate={{ scale: [1, 1.2, 1] }}
+                        transition={{ duration: 2, repeat: Infinity }}
+                      />
+                    )}
+                  </motion.button>
+
+                  <div className={`absolute top-full mt-4 left-1/2 -translate-x-1/2 whitespace-nowrap text-center transition-all ${
+                    isLocked ? 'opacity-40' : 'opacity-100'
+                  }`}>
+                    <span className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">
+                      {isCompleted ? 'Concluída' : isNext ? 'Disponível' : 'Bloqueada'}
+                    </span>
+                    <h4 className="font-bold text-slate-900 text-sm">{lesson.title}</h4>
+                    {(hasStarted || isCompleted) && (
+                       <div className="mt-2 flex items-center gap-2">
+                          <div className="h-1 flex-grow w-16 bg-slate-100 rounded-full overflow-hidden">
+                             <motion.div 
+                               className={`h-full ${isCompleted ? 'bg-emerald-500' : 'bg-amber-400'}`}
+                               initial={{ width: 0 }}
+                               animate={{ width: `${isCompleted ? 100 : (progress / lesson.parts.length) * 100}%` }} 
+                             />
+                          </div>
+                          <span className={`text-[8px] font-black ${isCompleted ? 'text-emerald-500' : 'text-amber-600'}`}>
+                            {isCompleted ? '100' : Math.round((progress / lesson.parts.length) * 100)}%
+                          </span>
+                       </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Peek Modal */}
+      <AnimatePresence>
+        {peekingLesson && (
+          <div className="fixed inset-0 z-[110] flex items-center justify-center p-6 bg-slate-950/40 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="w-full max-w-md bg-white rounded-[2.5rem] shadow-2xl overflow-hidden"
+            >
+              <div className="p-10">
+                <div className="w-16 h-16 bg-slate-50 text-slate-400 rounded-2xl flex items-center justify-center mb-6">
+                  <BookOpen size={32} />
+                </div>
+                <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">
+                  Conteúdo Bloqueado
+                </span>
+                <h3 className="text-2xl font-black text-slate-900 mb-3">{peekingLesson.title}</h3>
+                <p className="text-slate-500 font-medium mb-8 leading-relaxed">
+                  {peekingLesson.description}
+                </p>
+                
+                <div className="bg-amber-50 rounded-2xl p-4 border border-amber-100 mb-8 flex gap-3 items-start">
+                  <AlertCircle size={20} className="text-amber-500 shrink-0 mt-0.5" />
+                  <p className="text-xs font-bold text-amber-700 leading-relaxed">
+                    Você precisa completar as lições anteriores para desbloquear este módulo e ganhar seus pontos por ele.
+                  </p>
+                </div>
+
+                <button
+                  onClick={() => setPeekingLesson(null)}
+                  className="w-full py-4 bg-slate-900 text-white rounded-2xl font-bold hover:bg-slate-800 transition-colors"
+                >
+                  Entendi
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
 export function Lessons({ 
   completedLessons, 
   downloadedLessons, 
+  lessonProgress,
   isOnline, 
+  userStats,
   onComplete, 
+  onProgressUpdate,
   onAddToFlashcards, 
   onDownload,
   onBackToHome,
-  soundEnabled
+  soundEnabled,
+  autoOpenLessonId,
+  onClearAutoOpen
 }: LessonsProps) {
+  const [viewMode, setViewMode] = useState<'grid' | 'map'>('grid');
   const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
+
   const [selectedLevel, setSelectedLevel] = useState<'beginner' | 'intermediate' | 'advanced'>('beginner');
   const [currentPartIndex, setCurrentPartIndex] = useState(0);
-  const [maxVisitedIndex, setMaxVisitedIndex] = useState(0); // Track progress for review jumping
+  const [maxVisitedIndex, setMaxVisitedIndex] = useState(0); 
+  const [correctInSession, setCorrectInSession] = useState(0);
+  const [questionsInSession, setQuestionsInSession] = useState(0);
+  const [showResumePrompt, setShowResumePrompt] = useState(false);
+  const [showTutorial, setShowTutorial] = useState(false);
+  const [tutorialStepIndex, setTutorialStepIndex] = useState(0);
+  const [hasSeenTutorial, setHasSeenTutorial] = useState(() => {
+    return localStorage.getItem('esperanto_has_seen_tutorial') === 'true';
+  });
+  const [pendingLesson, setPendingLesson] = useState<Lesson | null>(null);
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
   const [focusedOptionIndex, setFocusedOptionIndex] = useState<number>(-1);
@@ -1327,6 +1812,21 @@ export function Lessons({
   const [orderedWords, setOrderedWords] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const lessonContainerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (searchQuery.length > 0 && viewMode === 'map') {
+      setViewMode('grid');
+    }
+  }, [searchQuery, viewMode]);
+
+  const rotateAnimation = {
+    rotate: [0, 360],
+    transition: {
+      duration: 12,
+      repeat: Infinity,
+      ease: "linear"
+    }
+  };
 
   const handleShareLesson = (lesson: Lesson) => {
     const shareUrl = `${window.location.origin}/lessons?id=${lesson.id}`;
@@ -1569,6 +2069,70 @@ export function Lessons({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [selectedLesson, currentPartIndex, isCorrect, quizFinished, isQuizMode, quizIndex, focusedOptionIndex, selectedOption, isVerbPracticeMode, verbPracticeIndex, verbPracticeFinished]);
 
+  const handleSelectLesson = (lesson: Lesson) => {
+    const savedProgress = lessonProgress[lesson.id];
+    
+    // Count questions in this lesson for performance tracking
+    const qCount = lesson.parts.filter(p => ['question', 'combine', 'fill-blank', 'order-sentences'].includes(p.type)).length;
+    setQuestionsInSession(qCount);
+    setCorrectInSession(0);
+
+    if (savedProgress && savedProgress > 0) {
+      setPendingLesson(lesson);
+      setShowResumePrompt(true);
+    } else {
+      setSelectedLesson(lesson);
+      setCurrentPartIndex(0);
+      setMaxVisitedIndex(0);
+      setIsLessonFinished(false);
+      
+      // If it's the first lesson and player hasn't seen tutorial yet, and starting fresh
+      if (lesson.id === 'l1' && !hasSeenTutorial) {
+        setShowTutorial(true);
+        setTutorialStepIndex(0);
+      }
+    }
+  };
+
+  const handleResumeMatch = (resume: boolean) => {
+    if (!pendingLesson) return;
+    const progress = lessonProgress[pendingLesson.id] || 0;
+    
+    setSelectedLesson(pendingLesson);
+    setCurrentPartIndex(resume ? progress : 0);
+    setMaxVisitedIndex(resume ? progress : 0);
+    setIsLessonFinished(false);
+    setShowResumePrompt(false);
+    setPendingLesson(null);
+  };
+
+  // Handle auto-open if requested from Hero
+  useEffect(() => {
+    if (autoOpenLessonId) {
+      const lessonToOpen = SAMPLE_LESSONS.find(l => l.id === autoOpenLessonId);
+      if (lessonToOpen) {
+        handleSelectLesson(lessonToOpen);
+        onClearAutoOpen?.();
+      }
+    }
+  }, [autoOpenLessonId, handleSelectLesson, onClearAutoOpen]);
+
+  const handleSkipTutorial = () => {
+    setShowTutorial(false);
+    setHasSeenTutorial(true);
+    localStorage.setItem('esperanto_has_seen_tutorial', 'true');
+  };
+
+  const handleNextTutorialStep = () => {
+    if (tutorialStepIndex < LESSON_TUTORIAL_STEPS.length - 1) {
+      setTutorialStepIndex(prev => prev + 1);
+    } else {
+      setShowTutorial(false);
+      setHasSeenTutorial(true);
+      localStorage.setItem('esperanto_has_seen_tutorial', 'true');
+    }
+  };
+
   const handleNext = () => {
     if (!selectedLesson) return;
     if (currentPartIndex < selectedLesson.parts.length - 1) {
@@ -1578,8 +2142,12 @@ export function Lessons({
       setSelectedOption(null);
       setIsCorrect(null);
       setOrderedWords([]);
+      
+      // Save progress
+      onProgressUpdate(selectedLesson.id, nextIndex);
     } else {
-      onComplete(selectedLesson.id);
+      const score = questionsInSession > 0 ? Math.round((correctInSession / questionsInSession) * 100) : 100;
+      onComplete(selectedLesson.id, score);
       setIsLessonFinished(true);
     }
   };
@@ -1590,11 +2158,34 @@ export function Lessons({
     setSelectedOption(option);
     const correct = option === part.correctAnswer;
     setIsCorrect(correct);
+    if (correct) {
+      setCorrectInSession(prev => prev + 1);
+    }
     if (soundEnabled) {
       if (correct) soundService.playCorrect();
       else soundService.playIncorrect();
     }
   };
+
+  const masteryData = useMemo(() => {
+    if (!userStats.lessonScores || userStats.lessonScores.length === 0) return { avg: 0, count: 0, recommendation: 'beginner' };
+    
+    // Get lessons of current level
+    const levelLessonIds = SAMPLE_LESSONS.filter(l => l.difficulty === selectedLevel).map(l => l.id);
+    const relevantScores = userStats.lessonScores.filter(s => levelLessonIds.includes(s.lessonId));
+    
+    if (relevantScores.length === 0) return { avg: 0, count: 0, recommendation: selectedLevel };
+
+    const avg = Math.round(relevantScores.reduce((sum, s) => sum + s.score, 0) / relevantScores.length);
+    
+    let recommendation = selectedLevel as 'beginner' | 'intermediate' | 'advanced';
+    if (avg >= 85 && relevantScores.length >= 3) {
+      if (selectedLevel === 'beginner') recommendation = 'intermediate';
+      else if (selectedLevel === 'intermediate') recommendation = 'advanced';
+    }
+
+    return { avg, count: relevantScores.length, recommendation };
+  }, [userStats.lessonScores, selectedLevel]);
 
   const filteredLessons = useMemo(() => {
     let base = SAMPLE_LESSONS.filter(l => l.difficulty === selectedLevel);
@@ -2035,7 +2626,7 @@ export function Lessons({
           </button>
         </div>
 
-        <div className="bento-card overflow-hidden">
+        <div id="lesson-header" className="bento-card overflow-hidden">
           {/* Dynamic Header */}
           <div className="bg-slate-50 border-b border-slate-100 p-6">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
@@ -2049,27 +2640,27 @@ export function Lessons({
                 </div>
               </div>
               
-              <div className="flex items-center gap-3">
-                {selectedLesson.parts.map((_, i) => (
-                  <button
-                    key={i}
-                    onMouseEnter={() => i <= maxVisitedIndex && setCurrentPartIndex(i)}
-                    className={`h-2 w-8 rounded-full transition-all duration-300 ${
-                      i === currentPartIndex 
-                        ? 'bg-emerald-500 w-12 shadow-lg shadow-emerald-500/20' 
-                        : i < currentPartIndex
-                          ? 'bg-emerald-200'
-                          : i <= maxVisitedIndex
-                            ? 'bg-emerald-100 cursor-pointer'
-                            : 'bg-slate-200 cursor-not-allowed'
-                    }`}
-                  />
-                ))}
-              </div>
+                <div className="flex items-center gap-3">
+                  {selectedLesson.parts.map((_, i) => (
+                    <button
+                      key={i}
+                      onClick={() => i <= maxVisitedIndex && setCurrentPartIndex(i)}
+                      className={`h-2 w-8 rounded-full transition-all duration-300 ${
+                        i === currentPartIndex 
+                          ? 'bg-emerald-500 w-12 shadow-lg shadow-emerald-500/20' 
+                          : i < currentPartIndex
+                            ? 'bg-emerald-200'
+                            : i <= maxVisitedIndex
+                              ? 'bg-emerald-100 cursor-pointer'
+                              : 'bg-slate-200 cursor-not-allowed'
+                      }`}
+                    />
+                  ))}
+                </div>
             </div>
 
             {/* Barra de Progresso Visual */}
-            <div className="w-full">
+            <div id="lesson-progress-container" className="w-full">
               <div className="flex justify-between items-center mb-2 text-xs font-bold text-slate-500">
                 <span>Parte {currentPartIndex + 1} de {selectedLesson.parts.length}</span>
                 <span className="text-emerald-600">{Math.round(progress)}% Concluído</span>
@@ -2090,6 +2681,7 @@ export function Lessons({
           <div className="p-10 md:p-14">
             <AnimatePresence mode="wait">
               <motion.div
+                id="lesson-content"
                 key={currentPartIndex}
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
@@ -2126,21 +2718,22 @@ export function Lessons({
                   </h2>
                 </div>
 
-                <div className="text-xl text-slate-600 leading-relaxed font-medium flex justify-between items-start gap-4">
-                  <span>
+                  <div className="text-xl text-slate-600 leading-relaxed font-medium flex justify-between items-start gap-4">
+                  <span className="flex-grow">
                     <InteractiveText text={part.content} />
                   </span>
                   {part.type === 'example' && (
-                    <button 
-                      onClick={() => {
-                        const [front, back] = part.content.split(' significa ').map(s => s.replace(/"/g, '').trim());
-                        if (front && back) onAddToFlashcards(front, back, selectedLesson.title);
-                      }}
-                      className="p-2 text-emerald-600 hover:bg-emerald-50 rounded-xl transition-colors shrink-0"
-                      title="Adicionar aos Flashcards"
-                    >
-                      <PlusSquare size={20} />
-                    </button>
+                    <Tooltip content="Adicionar aos Flashcards" position="left">
+                      <button 
+                        onClick={() => {
+                          const [front, back] = part.content.split(' significa ').map(s => s.replace(/"/g, '').trim());
+                          if (front && back) onAddToFlashcards(front, back, selectedLesson.title);
+                        }}
+                        className="p-2 text-emerald-600 hover:bg-emerald-50 rounded-xl transition-colors shrink-0"
+                      >
+                        <PlusSquare size={20} />
+                      </button>
+                    </Tooltip>
                   )}
                 </div>
 
@@ -2177,7 +2770,7 @@ export function Lessons({
                 )}
 
                 {part.type === 'combine' && (
-                  <div className="space-y-10 py-4">
+                  <div id="lesson-interaction" className="space-y-10 py-4">
                     <div className="flex flex-wrap items-center justify-center gap-3">
                       <div className="px-8 py-5 bg-slate-900 text-white rounded-[2rem] text-3xl font-black shadow-2xl ring-4 ring-slate-100">
                         {part.root}
@@ -2228,7 +2821,7 @@ export function Lessons({
                 )}
 
                 {part.type === 'question' && (
-                  <div className="space-y-3">
+                  <div id="lesson-interaction" className="space-y-3">
                     {part.options?.map((option, index) => (
                       <button
                         key={option}
@@ -2255,7 +2848,7 @@ export function Lessons({
                 )}
 
                 {part.type === 'fill-blank' && (
-                  <div className="space-y-6">
+                  <div id="lesson-interaction" className="space-y-6">
                     <div className="p-8 bg-slate-50 rounded-3xl border border-slate-100 text-center mb-8">
                        <p className="text-3xl font-black text-slate-900 tracking-tight">
                          {part.content.split('_______').map((s, i, arr) => (
@@ -2295,7 +2888,7 @@ export function Lessons({
                 )}
 
                 {part.type === 'order-sentences' && (
-                  <div className="space-y-8">
+                  <div id="lesson-interaction" className="space-y-8">
                     <div className="p-8 bg-slate-50 rounded-3xl border border-slate-100 min-h-[120px] flex flex-wrap gap-2 items-center justify-center">
                       {orderedWords.map((word, i) => (
                         <motion.button
@@ -2354,9 +2947,9 @@ export function Lessons({
                     <div className="flex space-x-3 items-start justify-between">
                       <div className="flex space-x-3">
                         <Info className={isCorrect ? 'text-emerald-500' : 'text-red-500'} />
-                        <p className={`text-sm font-medium ${isCorrect ? 'text-emerald-700' : 'text-red-700'}`}>
-                          {part.explanation}
-                        </p>
+                        <div className={`text-sm font-medium ${isCorrect ? 'text-emerald-700' : 'text-red-700'}`}>
+                          <InteractiveText text={part.explanation || ''} />
+                        </div>
                       </div>
                       {isCorrect && (
                         <button 
@@ -2374,7 +2967,7 @@ export function Lessons({
                 )}
 
 
-                <div className="pt-8 flex justify-end">
+                <div id="lesson-nav" className="pt-8 flex justify-end">
                   <button
                     disabled={(part.type === 'question' || part.type === 'combine' || part.type === 'fill-blank' || part.type === 'order-sentences') && !isCorrect}
                     onClick={handleNext}
@@ -2390,6 +2983,15 @@ export function Lessons({
                 </div>
               </motion.div>
             </AnimatePresence>
+
+            {showTutorial && (
+              <TutorialOverlay 
+                activeStep={LESSON_TUTORIAL_STEPS[tutorialStepIndex]}
+                onNext={handleNextTutorialStep}
+                onSkip={handleSkipTutorial}
+                isLast={tutorialStepIndex === LESSON_TUTORIAL_STEPS.length - 1}
+              />
+            )}
           </div>
         </div>
       </div>
@@ -2407,6 +3009,58 @@ export function Lessons({
           <span>Home</span>
         </button>
       </div>
+      {/* Search logic ends */}
+
+      {/* Resume Prompt Modal */}
+      <AnimatePresence>
+        {showResumePrompt && pendingLesson && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 sm:p-24 bg-slate-950/60 backdrop-blur-md">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="w-full max-w-xl bg-white rounded-[3rem] shadow-2xl overflow-hidden border border-slate-100"
+            >
+              <div className="p-10 text-center">
+                <div className="w-20 h-20 bg-amber-50 text-amber-500 rounded-3xl flex items-center justify-center mx-auto mb-8 shadow-inner">
+                  <Play size={40} className="ml-1" />
+                </div>
+                <h3 className="text-3xl font-black text-slate-900 mb-4">Continuar de onde parou?</h3>
+                <p className="text-slate-500 font-medium mb-10 leading-relaxed">
+                  Percebemos que você já iniciou a lição <span className="text-emerald-600 font-bold">"{pendingLesson.title}"</span>. 
+                  Deseja continuar da parte {lessonProgress[pendingLesson.id] + 1} ou começar do início?
+                </p>
+
+                <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                  <button 
+                    onClick={() => handleResumeMatch(true)}
+                    className="flex-1 py-5 bg-emerald-600 text-white rounded-2xl font-black hover:bg-emerald-700 transition-all shadow-xl shadow-emerald-600/20 active:scale-95 flex items-center justify-center gap-2"
+                  >
+                    Continuar Estudo
+                  </button>
+                  <button 
+                    onClick={() => handleResumeMatch(false)}
+                    className="flex-1 py-5 bg-slate-100 text-slate-600 rounded-2xl font-bold hover:bg-slate-200 transition-all active:scale-95"
+                  >
+                    Recomeçar Lição
+                  </button>
+                </div>
+                
+                <button 
+                  onClick={() => {
+                    setShowResumePrompt(false);
+                    setPendingLesson(null);
+                  }}
+                  className="mt-8 text-xs font-black text-slate-400 uppercase tracking-widest hover:text-slate-900 transition-colors"
+                >
+                  Cancelar
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
       <div className="mb-16 flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
         <div>
           <div className="hidden md:block mb-6">
@@ -2422,6 +3076,35 @@ export function Lessons({
           <p className="text-slate-500 max-w-2xl text-lg font-medium">Módulos sequenciais projetados para levar você do zero à fluência em tempo recorde.</p>
           
           <div className="flex flex-col md:flex-row md:items-center gap-4 mt-10">
+            <div className="flex bg-slate-100 p-1 rounded-xl items-center border border-slate-200">
+              <button
+                onClick={() => setViewMode('grid')}
+                className={`flex items-center gap-2 px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                  viewMode === 'grid' 
+                    ? 'bg-white text-slate-900 shadow-sm' 
+                    : 'text-slate-500 hover:text-slate-700'
+                }`}
+              >
+                <LayoutGrid size={14} />
+                Lista
+              </button>
+              <button
+                disabled={searchQuery.length > 0}
+                onClick={() => setViewMode('map')}
+                className={`flex items-center gap-2 px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                  viewMode === 'map' 
+                    ? 'bg-white text-slate-900 shadow-sm' 
+                    : searchQuery.length > 0
+                      ? 'text-slate-300 cursor-not-allowed'
+                      : 'text-slate-500 hover:text-slate-700'
+                }`}
+                title={searchQuery.length > 0 ? "O mapa não está disponível durante a busca" : "Ver mapa de progresso"}
+              >
+                <MapIcon size={14} />
+                Mapa
+              </button>
+            </div>
+
             <div className="flex flex-wrap items-center gap-2">
               {[
                 { id: 'beginner', label: 'Iniciante', active: 'bg-emerald-600 shadow-emerald-600/20' },
@@ -2431,13 +3114,22 @@ export function Lessons({
                 <button
                   key={level.id}
                   onClick={() => setSelectedLevel(level.id as any)}
-                  className={`px-6 py-2.5 rounded-xl font-bold text-sm transition-all ${
+                  className={`relative px-6 py-2.5 rounded-xl font-bold text-sm transition-all ${
                     selectedLevel === level.id
                       ? `${level.active} text-white shadow-lg`
                       : 'bg-white border border-slate-100 text-slate-500 hover:border-slate-300'
                   }`}
                 >
                   {level.label}
+                  {masteryData.recommendation === level.id && selectedLevel !== level.id && (
+                    <motion.span 
+                      initial={{ scale: 0.8, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      className="absolute -top-3 -right-2 bg-amber-400 text-amber-900 text-[8px] font-black px-2 py-0.5 rounded-full shadow-sm border border-white uppercase tracking-tighter"
+                    >
+                      Sugerido
+                    </motion.span>
+                  )}
                 </button>
               ))}
             </div>
@@ -2603,7 +3295,15 @@ export function Lessons({
         </button>
       </motion.div>
 
-      {filteredLessons.length === 0 ? (
+      {viewMode === 'map' ? (
+        <LessonMapSection 
+           lessons={filteredLessons}
+           completedLessons={completedLessons}
+           lessonProgress={lessonProgress}
+           onSelectLesson={handleSelectLesson}
+           levelColor={selectedLevel === 'beginner' ? '#10b981' : selectedLevel === 'intermediate' ? '#2563eb' : '#9333ea'}
+        />
+      ) : filteredLessons.length === 0 ? (
         <div className="bento-card p-10 md:p-20 text-center flex flex-col items-center">
           <div className="w-20 h-20 bg-slate-50 rounded-3xl flex items-center justify-center text-slate-300 mb-6">
             <Search size={32} />
@@ -2633,36 +3333,70 @@ export function Lessons({
         <div className="grid md:grid-cols-2 gap-8">
           {filteredLessons.map((lesson, idx) => {
             const isDownloaded = downloadedLessons.includes(lesson.id);
+            const isCompleted = completedLessons.includes(lesson.id);
+            const progress = lessonProgress[lesson.id];
+            const hasProgress = progress && progress > 0;
+            const progressPercent = progress ? Math.round((progress / lesson.parts.length) * 100) : 0;
+
             return (
               <div 
                 key={lesson.id}
-                className="group relative bento-card p-8 md:p-10 flex flex-col justify-between"
+                className="group relative bento-card p-8 md:p-10 flex flex-col justify-between overflow-hidden"
               >
                 <div 
-                  onClick={() => {
-                    setSelectedLesson(lesson);
-                    setCurrentPartIndex(0);
-                    setMaxVisitedIndex(0);
-                    setIsLessonFinished(false);
-                  }}
+                  onClick={() => handleSelectLesson(lesson)}
                   className="cursor-pointer"
                 >
-                  {completedLessons.includes(lesson.id) && (
-                    <div className="absolute top-10 right-20 text-emerald-500">
-                      <CheckCircle2 size={24} />
+                  {isCompleted && (
+                    <div className="absolute top-10 right-10 text-emerald-500 z-10">
+                      <CheckCircle2 size={24} className="fill-emerald-50" />
                     </div>
                   )}
+                  
+                  {hasProgress && !isCompleted && (
+                    <div className="absolute top-10 right-10 z-10">
+                      <div className="bg-amber-100 text-amber-700 text-[10px] font-black px-3 py-1 rounded-lg uppercase tracking-widest shadow-sm border border-amber-200 flex items-center gap-2">
+                        <RotateCcw size={12} className="animate-spin-slow" />
+                        Retomável
+                      </div>
+                    </div>
+                  )}
+
                   <div className="flex flex-col md:flex-row items-center md:items-start text-center md:text-left gap-8">
-                    <div className="w-16 h-16 bg-slate-900 rounded-2xl flex items-center justify-center text-white group-hover:bg-emerald-600 transition-colors shadow-lg shrink-0">
+                    <div className={`w-16 h-16 rounded-2xl flex items-center justify-center text-white transition-all shadow-lg shrink-0 ${
+                      isCompleted ? 'bg-emerald-600' : hasProgress ? 'bg-amber-500' : 'bg-slate-900 group-hover:bg-emerald-600'
+                    }`}>
                       <span className="text-2xl font-bold">{idx + 1}</span>
                     </div>
                     <div className="flex-grow">
+                      <div className="flex items-center justify-center md:justify-start gap-3 mb-2">
+                        <span className={`text-[10px] font-black uppercase tracking-[0.2em] ${isCompleted ? 'text-emerald-600' : 'text-slate-400'}`}>
+                          Parte {idx + 1}
+                        </span>
+                        
+                        <div className="flex items-center gap-2 flex-grow max-w-[150px]">
+                          <div className="h-1.5 flex-grow bg-slate-100 rounded-full overflow-hidden">
+                            <motion.div 
+                              className={`h-full ${isCompleted ? 'bg-emerald-500' : progressPercent > 0 ? 'bg-amber-500' : 'bg-slate-200'}`}
+                              initial={{ width: 0 }}
+                              animate={{ width: `${isCompleted ? 100 : progressPercent}%` }}
+                              transition={{ duration: 1, ease: "easeOut" }}
+                            />
+                          </div>
+                          <span className={`text-[9px] font-black ${isCompleted ? 'text-emerald-600' : progressPercent > 0 ? 'text-amber-600' : 'text-slate-400'}`}>
+                            {isCompleted ? '100' : progressPercent}%
+                          </span>
+                        </div>
+                      </div>
                       <h3 className="text-xl font-bold text-slate-900 mb-2 group-hover:text-emerald-700 transition-colors">{lesson.title}</h3>
                       <p className="text-slate-500 mb-6 font-medium leading-relaxed text-sm">{lesson.description}</p>
+                      
                       <div className="flex items-center justify-center md:justify-start text-emerald-600 font-bold gap-4 text-sm mt-2">
                         <div className="flex items-center gap-2">
-                          <span>{completedLessons.includes(lesson.id) ? 'Revisar Conteúdo' : 'Praticar Agora'}</span>
-                          <Play size={16} className="fill-current group-hover:translate-x-1 transition-transform" />
+                          <span className={`${hasProgress && !isCompleted ? 'text-amber-600' : ''}`}>
+                            {isCompleted ? 'Revisar Conteúdo' : hasProgress ? 'Continuar de onde parou' : 'Praticar Agora'}
+                          </span>
+                          <Play size={16} className={`fill-current group-hover:translate-x-1 transition-transform ${hasProgress && !isCompleted ? 'text-amber-600' : ''}`} />
                         </div>
                         <button 
                           onClick={(e) => {
@@ -2681,20 +3415,21 @@ export function Lessons({
                 </div>
 
                 {isOnline && (
-                  <button 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onDownload(lesson.id);
-                    }}
-                    className={`absolute bottom-10 right-10 p-3 rounded-2xl transition-all ${
-                      isDownloaded 
-                        ? 'bg-emerald-100 text-emerald-600' 
-                        : 'bg-slate-50 text-slate-400 hover:bg-slate-100'
-                    }`}
-                    title={isDownloaded ? 'Disponível Offline' : 'Baixar para Offline'}
-                  >
-                    {isDownloaded ? <CheckCircle2 size={20} /> : <Download size={20} />}
-                  </button>
+                  <Tooltip content={isDownloaded ? 'Disponível Offline' : 'Baixar para Offline'} position="left">
+                    <button 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onDownload(lesson.id);
+                      }}
+                      className={`absolute bottom-10 right-10 p-3 rounded-2xl transition-all ${
+                        isDownloaded 
+                          ? 'bg-emerald-100 text-emerald-600' 
+                          : 'bg-slate-50 text-slate-400 hover:bg-slate-100'
+                      }`}
+                    >
+                      {isDownloaded ? <CheckCircle2 size={20} /> : <Download size={20} />}
+                    </button>
+                  </Tooltip>
                 )}
                 {!isOnline && isDownloaded && (
                   <div className="absolute bottom-10 right-10 p-3 bg-emerald-50 text-emerald-600 rounded-2xl">

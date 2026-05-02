@@ -4,14 +4,43 @@ export interface DictionaryEntry {
   example: string;
   exampleTranslation: string;
   category: string;
+  usageTip?: string;
 }
 
 export const DICTIONARY: DictionaryEntry[] = [
   // Saudações e Frases Básicas
-  { word: 'Saluton', translation: 'Olá', example: 'Saluton, amiko!', exampleTranslation: 'Olá, amigo!', category: 'Saudações' },
-  { word: 'Dankon', translation: 'Obrigado', example: 'Dankon pro la helpo.', exampleTranslation: 'Obrigado pela ajuda.', category: 'Saudações' },
-  { word: 'Bonvolu', translation: 'Por favor', example: 'Bonvolu sidiĝi.', exampleTranslation: 'Por favor, sente-se.', category: 'Saudações' },
-  { word: 'Kiel vi fartas?', translation: 'Como vai você?', example: 'Kiel vi fartas hodiaŭ?', exampleTranslation: 'Como vai você hoje?', category: 'Saudações' },
+  { 
+    word: 'Saluton', 
+    translation: 'Olá', 
+    example: 'Saluton, amiko!', 
+    exampleTranslation: 'Olá, amigo!', 
+    category: 'Saudações',
+    usageTip: 'É a saudação mais comum e universal no Esperanto.'
+  },
+  { 
+    word: 'Dankon', 
+    translation: 'Obrigado', 
+    example: 'Dankon pro la helpo.', 
+    exampleTranslation: 'Obrigado pela ajuda.', 
+    category: 'Saudações',
+    usageTip: 'Pode ser usado sozinho ou como "Multan dankon" (Muito obrigado).'
+  },
+  { 
+    word: 'Bonvolu', 
+    translation: 'Por favor', 
+    example: 'Bonvolu sidiĝi.', 
+    exampleTranslation: 'Por favor, sente-se.', 
+    category: 'Saudações',
+    usageTip: 'Literalmente significa "tenha a boa vontade de".'
+  },
+  { 
+    word: 'Kiel vi fartas?', 
+    translation: 'Como vai você?', 
+    example: 'Kiel vi fartas hodiaŭ?', 
+    exampleTranslation: 'Como vai você hoje?', 
+    category: 'Saudações',
+    usageTip: 'Uma resposta comum é "Bone, dankon" (Bem, obrigado).'
+  },
   { word: 'Jes', translation: 'Sim', example: 'Jes, mi parolas Esperanton.', exampleTranslation: 'Sim, eu falo Esperanto.', category: 'Saudações' },
   { word: 'Ne', translation: 'Não', example: 'Ne, mi ne scias.', exampleTranslation: 'Não, eu não sei.', category: 'Saudações' },
   { word: 'Ĝis revido', translation: 'Até logo', example: 'Ĝis revido, morgaŭ!', exampleTranslation: 'Até logo, amanhã!', category: 'Saudações' },

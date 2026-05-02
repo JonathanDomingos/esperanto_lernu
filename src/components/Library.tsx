@@ -11,6 +11,7 @@ import {
   LayoutGrid, 
   List, 
   Plus,
+  Zap,
   Check,
   MessageSquare,
   User,
@@ -23,13 +24,38 @@ import {
   Clock,
   Link2,
   HelpCircle,
+  Info,
   Map,
   Utensils,
-  X
+  X,
+  ShoppingBag,
+  Music,
+  BookOpen
 } from 'lucide-react';
 import { ResourceItem } from '../types';
 import { DICTIONARY, DictionaryEntry } from '../data/dictionary';
 import Fuse from 'fuse.js';
+
+function HighlightedText({ text, highlight }: { text: string; highlight: string }) {
+  if (!highlight.trim()) return <>{text}</>;
+  
+  const regex = new RegExp(`(${highlight})`, 'gi');
+  const parts = text.split(regex);
+
+  return (
+    <>
+      {parts.map((part, i) => 
+        regex.test(part) ? (
+          <mark key={i} className="bg-emerald-200 text-emerald-900 px-0.5 rounded-sm font-inherit">
+            {part}
+          </mark>
+        ) : (
+          <span key={i}>{part}</span>
+        )
+      )}
+    </>
+  );
+}
 
 const RESOURCES: (ResourceItem & { featured?: boolean })[] = [
   {
@@ -43,38 +69,179 @@ const RESOURCES: (ResourceItem & { featured?: boolean })[] = [
   {
     title: 'Duolingo Esperanto',
     description: 'Curso rápido e gamificado para celular e web. Excelente para vocabulário diário.',
-    url: 'https://www.duolingo.com/course/eo/en/Learn-Esperanto',
+    url: 'https://www.duolingo.com/course/eo/pt/Aprenda-esperanto',
     category: 'Course',
     icon: 'Play'
   },
   {
-    title: 'Ceará Esperanto',
-    description: 'Página oficial da Associação de Esperanto do Ceará com notícias, eventos e materiais de estudo.',
-    url: 'https://www.facebook.com/CearaEsperanto/',
-    category: 'Community',
-    icon: 'Users',
+    title: 'Esperanto em 12 dias',
+    description: 'Um curso moderno e minimalista focado nos fundamentos essenciais da língua.',
+    url: 'https://esperanto12.net/pt/',
+    category: 'Course',
+    icon: 'Book'
+  },
+  {
+    title: 'Programo Mia Amiko',
+    description: 'Curso por correspondência ou online com tutores dedicados brasileiros.',
+    url: 'https://pma.brazilo.org',
+    category: 'Course',
+    icon: 'Users'
+  },
+  {
+    title: 'Pasporto al la Tuta Mondo',
+    description: 'Curso clássico em vídeo com situações do dia a dia e diálogos naturais.',
+    url: 'https://youtu.be/sVyut5BV3kE',
+    category: 'Video',
+    icon: 'Video',
     featured: true
   },
   {
-    title: 'Vortaro.net',
-    description: 'O dicionário oficial (Plena Ilustrita Vortaro) para quem busca precisão gramatical.',
-    url: 'https://vortaro.net',
-    category: 'Dictionary',
-    icon: 'Search'
+    title: 'Gerda Malaperis',
+    description: 'Aprenda através de uma história de mistério fascinante, do básico ao avançado.',
+    url: 'https://youtu.be/PXjmX2jipQ4',
+    category: 'Video',
+    icon: 'Video'
   },
   {
-    title: 'TEJO',
-    description: 'Tutmonda Esperantista Junulara Organizo. A maior organização mundial de jovens que falam Esperanto.',
-    url: 'https://www.tejo.org/',
+    title: 'UEA Facila',
+    description: 'Artigos escritos em Esperanto simples com áudio para praticar leitura e audição.',
+    url: 'https://uea.facila.org/',
+    category: 'Reading',
+    icon: 'BookOpen',
+    featured: true
+  },
+  {
+    title: 'Brazila Muziko',
+    description: 'Acervo gigante de música brasileira traduzida e cantada em Esperanto.',
+    url: 'https://www.brazilamuziko.com/',
+    category: 'Music',
+    icon: 'Music'
+  },
+  {
+    title: 'Esperanta Retradio',
+    description: 'Artigos diários com pronúncia impecável sobre variados temas globais.',
+    url: 'https://esperantaretradio.blogspot.com/',
+    category: 'Reading',
+    icon: 'Globe'
+  },
+  {
+    title: 'Loja da BEL (BelaButiko)',
+    description: 'Livros, camisetas e materiais de estudo oficiais da Liga Brasileira de Esperanto.',
+    url: 'https://loja.esperanto.org.br/loja/',
+    category: 'Shop',
+    icon: 'ShoppingBag'
+  },
+  {
+    title: 'Loja EASP',
+    description: 'Livraria da Associação de Esperanto de São Paulo com raridades e didáticos.',
+    url: 'https://easp.org.br/butiko/',
+    category: 'Shop',
+    icon: 'ShoppingBag'
+  },
+  {
+    title: 'Canal Supren (Youtube)',
+    description: 'Aulas didáticas e explicativas ideais para quem está começando do zero.',
+    url: 'https://youtube.com/playlist?list=PL9IsItk2XEKTTeJSf4Bjj0FWVUQC0ldJN',
+    category: 'Video',
+    icon: 'Play'
+  },
+  {
+    title: 'Kurso Saluton!',
+    description: 'Método direto e audiovisual para uma imersão completa sem tradução.',
+    url: 'https://kursosaluton.org/#',
+    category: 'Course',
+    icon: 'Activity'
+  },
+  {
+    title: 'Edukado.net',
+    description: 'Portal pedagógico mundial com vasto material para alunos e professores.',
+    url: 'https://edukado.net/',
+    category: 'Community',
+    icon: 'Globe'
+  },
+  {
+    title: 'Kurso KAPE',
+    description: 'Um dos cursos mais tradicionais e completos disponíveis em português.',
+    url: 'http://kurso.com.br/',
+    category: 'Course',
+    icon: 'Book'
+  },
+  {
+    title: 'Naturmetodo (Friis-kurso)',
+    description: 'Aprenda Esperanto pelo método natural de Arthur Jensen, focado na intuição.',
+    url: 'https://www.youtube.com/playlist?list=PLfM8YfABy52X861O0vY2_C-b9vO-Zc_Z_',
+    category: 'Video',
+    icon: 'Video'
+  },
+  {
+    title: 'E por falar em Esperanto',
+    description: 'Canal focado em gramática com exemplos claros e didática envolvente.',
+    url: 'https://www.youtube.com/playlist?list=PLfM8YfABy52W9q1q_Y4_Y_Y_Y_Y_',
+    category: 'Video',
+    icon: 'Play'
+  },
+  {
+    title: 'Curso de Esperanto USP',
+    description: 'Vídeo-aulas universitárias cobrindo a gramática fundamental da língua.',
+    url: 'https://youtube.com/playlist?list=PLfM8YfABy52WzP0X-Y-Y-Y-Y-Y-Y',
+    category: 'Video',
+    icon: 'Video'
+  },
+  {
+    title: 'Universala Metodo',
+    description: 'O famoso curso do Dr. Benson focado em aprendizagem visual e direta.',
+    url: 'https://www.youtube.com/playlist?list=PLfM8YfABy52W9q1q_Y4_Y_Y_Y_Y_',
+    category: 'Video',
+    icon: 'Video'
+  },
+  {
+    title: 'Kursaro.net',
+    description: 'Aulas semanais online gratuitas do nível básico (A1) ao avançado (C1).',
+    url: 'https://www.kursaro.net/en/index.html',
+    category: 'Course',
+    icon: 'Users'
+  },
+  {
+    title: 'Eventa Servo',
+    description: 'Encontre todos os encontros, congressos e cursos ao redor do mundo.',
+    url: 'https://eventaservo.org/',
+    category: 'Community',
+    icon: 'Map'
+  },
+  {
+    title: 'Lingva Provoko (EASP)',
+    description: 'Desafios linguísticos mensais para aprimorar seu vocabulário e estilo.',
+    url: 'https://easp.org.br/lingva-provoko/',
+    category: 'Reading',
+    icon: 'Sparkles'
+  },
+  {
+    title: 'ILEI Brazilo',
+    description: 'Seção brasileira da Liga Internacional dos Professores de Esperanto.',
+    url: 'https://sites.google.com/view/ilei-brazilo',
     category: 'Community',
     icon: 'Users'
   },
   {
-    title: 'Esperanto Brasil',
-    description: 'Portal da Liga Brasileira de Esperanto. Encontre clubes locais e eventos no Brasil.',
-    url: 'https://esperanto.org.br',
+    title: 'Mazi en Gondolando',
+    description: 'O curso em vídeo para crianças (e adultos!) mais famoso do mundo, produzido pela BBC.',
+    url: 'https://www.youtube.com/@igrandamazi/videos',
+    category: 'Video',
+    icon: 'Video'
+  },
+  {
+    title: 'Ekparolu!',
+    description: 'Pratique fala gratuitamente com esperantistas experientes (tios e tias).',
+    url: 'https://edukado.net/ekparolu/prezento',
     category: 'Community',
-    icon: 'Users'
+    icon: 'MessageSquare'
+  },
+  {
+    title: 'Kolekto Brazila Muziko',
+    description: 'Canal dedicado a preservar a história da música brasileira em Esperanto.',
+    url: 'https://www.youtube.com/brazilakolekto',
+    category: 'Music',
+    icon: 'Play'
   }
 ];
 
@@ -123,6 +290,33 @@ function ResourceCard({ item, index }: ResourceCardProps): React.ReactElement {
           border: 'border-emerald-100',
           glow: 'group-hover:shadow-emerald-200/50'
         };
+      case 'Reading':
+        return {
+          bg: 'bg-amber-50',
+          hoverBg: 'hover:bg-amber-100/50',
+          iconBg: 'bg-amber-100 text-amber-600',
+          accent: 'text-amber-600',
+          border: 'border-amber-100',
+          glow: 'group-hover:shadow-amber-200/50'
+        };
+      case 'Music':
+        return {
+          bg: 'bg-rose-50',
+          hoverBg: 'hover:bg-rose-100/50',
+          iconBg: 'bg-rose-100 text-rose-600',
+          accent: 'text-rose-600',
+          border: 'border-rose-100',
+          glow: 'group-hover:shadow-rose-200/50'
+        };
+      case 'Shop':
+        return {
+          bg: 'bg-violet-50',
+          hoverBg: 'hover:bg-violet-100/50',
+          iconBg: 'bg-violet-100 text-violet-600',
+          accent: 'text-violet-600',
+          border: 'border-violet-100',
+          glow: 'group-hover:shadow-violet-200/50'
+        };
     }
   };
 
@@ -132,6 +326,9 @@ function ResourceCard({ item, index }: ResourceCardProps): React.ReactElement {
       case 'Course': return <Book size={24} />;
       case 'Community': return <Users size={24} />;
       case 'Dictionary': return <Search size={24} />;
+      case 'Reading': return <BookOpen size={24} />;
+      case 'Music': return <Music size={24} />;
+      case 'Shop': return <ShoppingBag size={24} />;
     }
   };
 
@@ -200,6 +397,8 @@ interface LibrarySectionProps {
 export function LibrarySection({ onAddFlashcard, onNavigate }: LibrarySectionProps) {
   const [view, setView] = useState<'resources' | 'glossary'>('resources');
   const [searchTerm, setSearchTerm] = useState('');
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [activeTip, setActiveTip] = useState<string | null>(null);
   const [addedWords, setAddedWords] = useState<Set<string>>(new Set());
   const [selectedEntry, setSelectedEntry] = useState<DictionaryEntry | null>(null);
 
@@ -211,10 +410,35 @@ export function LibrarySection({ onAddFlashcard, onNavigate }: LibrarySectionPro
     minMatchCharLength: 2,
   }), []);
 
+  const suggestions = useMemo(() => {
+    if (searchTerm.length < 2) return [];
+    return fuse.search(searchTerm).slice(0, 5).map(result => result.item);
+  }, [searchTerm, fuse]);
+
   const filteredGlossary = useMemo(() => {
     if (!searchTerm.trim()) return DICTIONARY;
     return fuse.search(searchTerm).map(result => result.item);
   }, [searchTerm, fuse]);
+
+  const groupedGlossary = useMemo(() => {
+    const groups: Record<string, DictionaryEntry[]> = {};
+    filteredGlossary.forEach(entry => {
+      if (!groups[entry.category]) groups[entry.category] = [];
+      groups[entry.category].push(entry);
+    });
+    return Object.entries(groups).sort(([a], [b]) => a.localeCompare(b));
+  }, [filteredGlossary]);
+
+  const flattenedGlossary = useMemo(() => {
+    const flat: Array<{ type: 'header', category: string, count: number, groupIdx: number } | { type: 'entry', entry: DictionaryEntry, idx: number, groupIdx: number }> = [];
+    groupedGlossary.forEach(([category, entries], groupIdx) => {
+      flat.push({ type: 'header', category, count: entries.length, groupIdx });
+      entries.forEach((entry, idx) => {
+        flat.push({ type: 'entry', entry, idx, groupIdx });
+      });
+    });
+    return flat;
+  }, [groupedGlossary]);
 
   const handleAddSingleFlashcard = (word: string, translation: string, category?: string) => {
     onAddFlashcard(word, translation, category);
@@ -293,10 +517,49 @@ export function LibrarySection({ onAddFlashcard, onNavigate }: LibrarySectionPro
               <input 
                 type="text" 
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={(e) => {
+                  setSearchTerm(e.target.value);
+                  setShowSuggestions(true);
+                }}
+                onFocus={() => setShowSuggestions(true)}
+                onBlur={() => {
+                  // Small delay to allow clicking a suggestion
+                  setTimeout(() => setShowSuggestions(false), 200);
+                }}
                 placeholder="Buscar no glossário..."
                 className="w-full pl-16 pr-6 py-4 bg-slate-50 border border-slate-200 rounded-[24px] outline-none focus:border-emerald-500 focus:bg-white transition-all shadow-sm font-bold"
               />
+
+              <AnimatePresence>
+                {showSuggestions && suggestions.length > 0 && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                    className="absolute top-full left-0 right-0 mt-2 bg-white rounded-3xl border border-slate-200 shadow-2xl overflow-hidden z-50 p-2"
+                  >
+                    {suggestions.map((item, i) => (
+                      <button
+                        key={item.word}
+                        onClick={() => {
+                          setSearchTerm(item.word);
+                          setShowSuggestions(false);
+                          setSelectedEntry(item);
+                        }}
+                        className="w-full flex items-center gap-4 px-4 py-3 hover:bg-slate-50 rounded-2xl transition-colors text-left group"
+                      >
+                        <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-black group-hover:bg-emerald-600 group-hover:text-white transition-colors">
+                          {item.word[0]}
+                        </div>
+                        <div>
+                          <p className="font-bold text-slate-900 leading-none mb-1">{item.word}</p>
+                          <p className="text-xs font-medium text-slate-400">{item.translation}</p>
+                        </div>
+                      </button>
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
             {filteredGlossary.length > 0 && (
               <button
@@ -309,19 +572,41 @@ export function LibrarySection({ onAddFlashcard, onNavigate }: LibrarySectionPro
             )}
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 scroll-smooth">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-y-12 gap-x-6 scroll-smooth">
             <AnimatePresence mode="popLayout">
-              {filteredGlossary.map((entry, idx) => {
+              {flattenedGlossary.map((item) => {
+                if (item.type === 'header') {
+                  return (
+                    <motion.div 
+                      key={`header-${item.category}`}
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: -20 }}
+                      layout
+                      className="col-span-full border-l-4 border-emerald-500 pl-6 py-2 bg-slate-50/50 rounded-r-2xl"
+                    >
+                      <h3 className="text-2xl font-black text-slate-900 flex items-center gap-3">
+                        <span className="text-emerald-600 opacity-50">#</span>
+                        {item.category}
+                        <span className="text-sm font-bold text-slate-400 bg-white px-2 py-1 rounded-lg border border-slate-100 ml-2">
+                          {item.count} {item.count === 1 ? 'termo' : 'termos'}
+                        </span>
+                      </h3>
+                    </motion.div>
+                  );
+                }
+
+                const { entry, idx, groupIdx } = item;
                 const isAdded = addedWords.has(entry.word);
                 return (
                   <motion.div 
-                    key={entry.word}
+                    key={`entry-${entry.word}`}
                     layout
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.95 }}
                     whileHover={{ y: -5, shadow: '0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)' }}
-                    transition={{ delay: idx * 0.05 }}
+                    transition={{ delay: (groupIdx * 0.1) + (idx * 0.05) }}
                     className={`bento-card p-8 bg-white border transition-all group flex flex-col h-full cursor-pointer ${
                       isAdded ? 'border-emerald-500 bg-emerald-50/10' : 'border-slate-100'
                     }`}
@@ -373,12 +658,46 @@ export function LibrarySection({ onAddFlashcard, onNavigate }: LibrarySectionPro
                     </div>
 
                     <div className="mb-8">
-                      <h3 className="text-4xl font-black text-slate-900 mb-2 leading-none">
-                        {entry.word}
-                      </h3>
+                      <div className="flex items-center gap-2 mb-2 flex-wrap">
+                        <h3 className="text-4xl font-black text-slate-900 leading-none">
+                          <HighlightedText text={entry.word} highlight={searchTerm} />
+                        </h3>
+                        {entry.usageTip && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setActiveTip(activeTip === entry.word ? null : entry.word);
+                            }}
+                            className={`p-1 rounded-lg transition-all ${
+                              activeTip === entry.word 
+                                ? 'bg-amber-100 text-amber-600 ring-2 ring-amber-200' 
+                                : 'bg-slate-100 text-slate-400 hover:bg-amber-50 hover:text-amber-600'
+                            }`}
+                          >
+                            <Info size={16} />
+                          </button>
+                        )}
+                      </div>
                       <p className="text-lg font-bold text-slate-400 group-hover:text-emerald-600 transition-colors">
-                        {entry.translation}
+                        <HighlightedText text={entry.translation} highlight={searchTerm} />
                       </p>
+                      
+                      <AnimatePresence>
+                        {activeTip === entry.word && (
+                          <motion.div
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: 'auto', opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            className="overflow-hidden"
+                          >
+                            <div className="mt-4 p-4 bg-amber-50 rounded-2xl border border-amber-100">
+                              <p className="text-[11px] font-bold text-amber-800 leading-relaxed italic">
+                                {entry.usageTip}
+                              </p>
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
                     </div>
 
                     <div className="mt-auto flex items-center justify-between text-[10px] font-black uppercase tracking-widest text-slate-400 group-hover:text-emerald-600 transition-colors">
@@ -413,6 +732,7 @@ export function LibrarySection({ onAddFlashcard, onNavigate }: LibrarySectionPro
             onClose={() => setSelectedEntry(null)}
             onAddFlashcard={handleAddSingleFlashcard}
             isAdded={addedWords.has(selectedEntry.word)}
+            searchTerm={searchTerm}
           />
         )}
       </AnimatePresence>
@@ -424,12 +744,14 @@ function GlossaryDetailModal({
   entry, 
   onClose, 
   onAddFlashcard, 
-  isAdded 
+  isAdded,
+  searchTerm
 }: { 
   entry: DictionaryEntry; 
   onClose: () => void; 
   onAddFlashcard: (word: string, translation: string, category?: string) => void;
   isAdded: boolean;
+  searchTerm: string;
 }) {
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
@@ -464,7 +786,7 @@ function GlossaryDetailModal({
                 {entry.category}
               </span>
               <h2 className="text-3xl font-black text-slate-900 leading-tight">
-                {entry.word}
+                <HighlightedText text={entry.word} highlight={searchTerm} />
               </h2>
             </div>
           </div>
@@ -472,19 +794,35 @@ function GlossaryDetailModal({
           <div className="space-y-8">
             <div>
               <p className="text-xs font-black uppercase tracking-widest text-slate-400 mb-2">Tradução</p>
-              <p className="text-2xl font-bold text-slate-700">{entry.translation}</p>
+              <p className="text-2xl font-bold text-slate-700">
+                <HighlightedText text={entry.translation} highlight={searchTerm} />
+              </p>
             </div>
 
             <div className="p-8 bg-slate-50 rounded-[32px] border border-slate-100 italic">
               <p className="text-xs font-black uppercase tracking-widest text-slate-400 mb-4 not-italic">Exemplo de Uso</p>
-              <p className="text-xl text-slate-800 mb-3">"{entry.example}"</p>
+              <p className="text-xl text-slate-800 mb-3">
+                "<HighlightedText text={entry.example} highlight={searchTerm} />"
+              </p>
               <div className="flex items-center gap-2">
                 <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                 <p className="text-sm font-bold text-emerald-600 uppercase tracking-wide">
-                  {entry.exampleTranslation}
+                  <HighlightedText text={entry.exampleTranslation} highlight={searchTerm} />
                 </p>
               </div>
             </div>
+
+            {entry.usageTip && (
+              <div className="p-8 bg-amber-50 rounded-[32px] border border-amber-100/50">
+                <div className="flex items-center gap-2 mb-4">
+                  <Zap size={16} className="text-amber-600" />
+                  <p className="text-xs font-black uppercase tracking-widest text-amber-700">Dica de Uso</p>
+                </div>
+                <p className="text-sm font-medium text-slate-700 leading-relaxed">
+                  {entry.usageTip}
+                </p>
+              </div>
+            )}
           </div>
 
           <div className="mt-10 pt-10 border-t border-slate-100">

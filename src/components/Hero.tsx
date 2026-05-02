@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { motion } from 'motion/react';
 import { ChevronRight, Globe, Sparkles, BookOpen, Search, Users, Target, Clock, Zap, Library, Trophy, ArrowRight } from 'lucide-react';
 import { UserStats } from '../types';
+import { Tooltip } from './ui/Tooltip';
 
 const WORDS_OF_THE_DAY = [
   { word: 'Klopodi', type: 'Verb', ipa: '/kloˈpodi/', definition: 'Se esforçar, empenhar-se, fazer um esforço para realizar algo.', example: '"Mi klopodas lerni Esperanton ĉiutage."' },
@@ -12,15 +13,19 @@ const WORDS_OF_THE_DAY = [
 ];
 
 interface HeroProps {
-  onStart: () => void;
+  onStart: (lessonId?: string) => void;
   onNavigate: (tab: string) => void;
   stats: UserStats;
+  lessonProgress: Record<string, number>;
 }
 
-export function Hero({ onStart, onNavigate, stats }: HeroProps) {
+export function Hero({ onStart, onNavigate, stats, lessonProgress }: HeroProps) {
   const dailyWord = useMemo(() => {
     return WORDS_OF_THE_DAY[Math.floor(Math.random() * WORDS_OF_THE_DAY.length)];
   }, []);
+
+  const lastLessonId = stats.lastLessonId;
+  const hasProgress = lastLessonId && lessonProgress[lastLessonId] !== undefined;
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-8 py-10 space-y-10 overflow-x-hidden">
@@ -48,22 +53,41 @@ export function Hero({ onStart, onNavigate, stats }: HeroProps) {
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 0.2 }}
-          className="flex gap-3"
+          className="flex flex-wrap gap-3"
         >
-          <button 
-            onClick={() => onNavigate('lessons')}
-            className="px-6 py-3 bg-white border border-slate-200 rounded-2xl text-sm font-bold text-slate-700 hover:border-emerald-500 hover:text-emerald-600 transition-all shadow-sm flex items-center gap-2"
-          >
-            <BookOpen size={18} />
-            Lições
-          </button>
-          <button 
-            onClick={() => onNavigate('library')}
-            className="px-6 py-3 bg-white border border-slate-200 rounded-2xl text-sm font-bold text-slate-700 hover:border-blue-500 hover:text-blue-600 transition-all shadow-sm flex items-center gap-2"
-          >
-            <Library size={18} />
-            Acervo
-          </button>
+          <Tooltip content="Ver todas as lições disponíveis" position="bottom">
+            <button 
+              onClick={() => onNavigate('lessons')}
+              className="px-6 py-3 bg-white border border-slate-200 rounded-2xl text-sm font-bold text-slate-700 hover:border-emerald-500 hover:text-emerald-600 hover:shadow-lg transition-all shadow-sm flex items-center gap-2"
+            >
+              <div className="w-8 h-8 bg-emerald-50 rounded-lg flex items-center justify-center text-emerald-600">
+                <BookOpen size={16} />
+              </div>
+              <span>Minhas Lições</span>
+            </button>
+          </Tooltip>
+          <Tooltip content="Dicionário e Gramática" position="bottom">
+            <button 
+              onClick={() => onNavigate('library')}
+              className="px-6 py-3 bg-white border border-slate-200 rounded-2xl text-sm font-bold text-slate-700 hover:border-blue-500 hover:text-blue-600 hover:shadow-lg transition-all shadow-sm flex items-center gap-2"
+            >
+              <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center text-blue-600">
+                <Library size={16} />
+              </div>
+              <span>Acervo Digital</span>
+            </button>
+          </Tooltip>
+          <Tooltip content="Meus Dados e Progresso" position="bottom">
+            <button 
+              onClick={() => onNavigate('dashboard')}
+              className="px-6 py-3 bg-slate-900 border border-slate-800 rounded-2xl text-sm font-bold text-white hover:bg-slate-800 hover:shadow-lg transition-all shadow-sm flex items-center gap-2"
+            >
+              <div className="w-8 h-8 bg-white/10 rounded-lg flex items-center justify-center text-emerald-400">
+                <Zap size={16} />
+              </div>
+              <span>Dashboard</span>
+            </button>
+          </Tooltip>
         </motion.div>
       </div>
 
@@ -76,17 +100,23 @@ export function Hero({ onStart, onNavigate, stats }: HeroProps) {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
           className="md:col-span-2 md:row-span-3 bg-emerald-600 rounded-[40px] p-8 md:p-10 text-white relative overflow-hidden flex flex-col justify-between shadow-xl shadow-emerald-600/20 group cursor-pointer"
-          onClick={onStart}
+          onClick={() => onStart(hasProgress ? lastLessonId : undefined)}
         >
           <div className="relative z-10">
-            <span className="bento-label !text-white mb-2 border-b border-white/30 pb-1">Retomar Estudos</span>
+            <span className="bento-label !text-white mb-2 border-b border-white/30 pb-1">
+              {hasProgress ? 'Retomar Estudos' : 'Iniciar Jornada'}
+            </span>
             <h2 className="text-4xl md:text-5xl font-bold mb-6 leading-tight mt-6">
-              La Akuzativo: <br/>
-              <span className="text-emerald-200 italic font-serif">Kiam uzi la literon '-n'</span>
+              {hasProgress ? 'Continue de onde parou' : 'La Akuzativo:'} <br/>
+              <span className="text-emerald-200 italic font-serif">
+                {hasProgress ? 'Você tem progresso salvo!' : 'Kiam uzi la literon \'-n\''}
+              </span>
             </h2>
 
             <p className="text-emerald-50 mb-8 max-w-sm text-lg font-medium opacity-90 leading-relaxed">
-              Aprenda como identificar o objeto direto em uma frase usando a regra mais distinta do Esperanto.
+              {hasProgress 
+                ? 'Clique para voltar exatamente para a parte da lição onde você parou anteriormente.'
+                : 'Aprenda como identificar o objeto direto em uma frase usando a regra mais distinta do Esperanto.'}
             </p>
           </div>
           
@@ -94,14 +124,16 @@ export function Hero({ onStart, onNavigate, stats }: HeroProps) {
             <button 
               className="bg-white text-emerald-700 px-8 py-4 rounded-2xl font-bold flex items-center gap-2 hover:scale-105 active:scale-95 transition-all shadow-lg"
             >
-              Começar Agora
+              {hasProgress ? 'Continuar Lição' : 'Começar Agora'}
               <ChevronRight className="w-5 h-5" />
             </button>
-            <span className="text-xs font-bold text-emerald-100/60 uppercase tracking-widest hidden sm:block">15 minutos • Nível A1</span>
+            <span className="text-xs font-bold text-emerald-100/60 uppercase tracking-widest hidden sm:block">
+              {hasProgress ? `Parte ${lessonProgress[lastLessonId!] + 1}` : '15 minutos • Nível A1'}
+            </span>
           </div>
 
           <div className="absolute -right-8 -bottom-8 opacity-10 text-[240px] font-black pointer-events-none select-none group-hover:scale-110 transition-transform duration-700">
-            -N
+            {hasProgress ? '➜' : '-N'}
           </div>
         </motion.div>
 
@@ -189,18 +221,21 @@ export function Hero({ onStart, onNavigate, stats }: HeroProps) {
               { label: 'Vikipedio', color: 'bg-slate-100 text-slate-600', char: 'V', url: 'https://eo.wikipedia.org' },
               { label: 'Reddit', color: 'bg-orange-100 text-orange-600', char: 'R', url: 'https://reddit.com/r/esperanto' }
             ].map((item, i) => (
-              <a 
-                key={i} 
-                href={item.url} 
-                target="_blank" 
-                rel="noreferrer" 
-                className="text-center group cursor-pointer"
-              >
-                <div className={`w-12 h-12 ${item.color} rounded-2xl flex items-center justify-center font-bold text-xl mb-2 group-hover:scale-110 transition-transform`}>
-                  {item.char}
-                </div>
-                <span className="text-[10px] font-bold text-slate-400 group-hover:text-slate-600 transition-colors uppercase">{item.label}</span>
-              </a>
+              <div key={i}>
+                <Tooltip content={`Visitar ${item.label}`} position="top">
+                  <a 
+                    href={item.url} 
+                    target="_blank" 
+                    rel="noreferrer" 
+                    className="text-center group cursor-pointer"
+                  >
+                    <div className={`w-12 h-12 ${item.color} rounded-2xl flex items-center justify-center font-bold text-xl mb-2 group-hover:scale-110 transition-transform`}>
+                      {item.char}
+                    </div>
+                    <span className="text-[10px] font-bold text-slate-400 group-hover:text-slate-600 transition-colors uppercase">{item.label}</span>
+                  </a>
+                </Tooltip>
+              </div>
             ))}
           </div>
         </motion.div>

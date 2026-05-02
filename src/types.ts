@@ -25,7 +25,7 @@ export interface ResourceItem {
   title: string;
   description: string;
   url: string;
-  category: 'Video' | 'Course' | 'Community' | 'Dictionary';
+  category: 'Video' | 'Course' | 'Community' | 'Dictionary' | 'Reading' | 'Music' | 'Shop';
   icon: string;
 }
 
@@ -81,7 +81,9 @@ export interface UserStats {
   points: number;
   streak: number;
   lastActivityDate?: string;
+  lastLessonId?: string;
   badges: string[]; // IDs of unlocked badges
+  lessonScores?: { lessonId: string; score: number; timestamp: number }[];
 }
 
 export interface SyncQueueItem {

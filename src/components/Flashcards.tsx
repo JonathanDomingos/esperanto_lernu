@@ -18,6 +18,7 @@ export function Flashcards({ cards, onAddCard, onUpdateCard, onDeleteCard, onAwa
   const [newFront, setNewFront] = useState('');
   const [newBack, setNewBack] = useState('');
   const [newCategory, setNewCategory] = useState('Geral');
+  const [error, setError] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState('Todos');
   const [searchQuery, setSearchQuery] = useState('');
   const [practiceMode, setPracticeMode] = useState(false);
@@ -31,11 +32,47 @@ export function Flashcards({ cards, onAddCard, onUpdateCard, onDeleteCard, onAwa
   const [showConfig, setShowConfig] = useState(false);
   const [shuffleOrder, setShuffleOrder] = useState(true);
   const [sideMode, setSideMode] = useState<'front' | 'back' | 'random'>('front');
+  const [nextIsSuggestion, setNextIsSuggestion] = useState(false);
   const [sessionCards, setSessionCards] = useState<any[]>([]);
+  const [reviewCount, setReviewCount] = useState(0);
+  const [initialSessionSize, setInitialSessionSize] = useState(0);
   const [cardToDelete, setCardToDelete] = useState<string | null>(null);
+  const [hasSavedSession, setHasSavedSession] = useState(false);
 
   const now = Date.now();
   const dueCards = cards.filter(c => !c.nextReview || c.nextReview <= now);
+
+  // Load saved session on mount
+  React.useEffect(() => {
+    const saved = localStorage.getItem('flashcards_session');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (parsed && parsed.sessionCards && parsed.sessionCards.length > 0) {
+          setHasSavedSession(true);
+        }
+      } catch (e) {
+        localStorage.removeItem('flashcards_session');
+      }
+    }
+  }, []);
+
+  // Save session state to localStorage
+  React.useEffect(() => {
+    if (practiceMode && !showSummary) {
+      localStorage.setItem('flashcards_session', JSON.stringify({
+        sessionCards,
+        currentIndex,
+        correctCount,
+        incorrectCount,
+        reviewCount,
+        initialSessionSize,
+        isQuickReview,
+        sideMode,
+        shuffleOrder
+      }));
+    }
+  }, [practiceMode, showSummary, sessionCards, currentIndex, correctCount, incorrectCount, reviewCount, initialSessionSize, isQuickReview, sideMode, shuffleOrder]);
   
   const categories = ['Todos', ...Array.from(new Set(cards.map(c => c.category || 'Geral')))];
   
@@ -66,6 +103,8 @@ export function Flashcards({ cards, onAddCard, onUpdateCard, onDeleteCard, onAwa
 
     setIsQuickReview(false);
     setSessionCards(prepared);
+    setInitialSessionSize(prepared.length);
+    setReviewCount(0);
     setCurrentIndex(0);
     setCorrectCount(0);
     setIncorrectCount(0);
@@ -73,16 +112,41 @@ export function Flashcards({ cards, onAddCard, onUpdateCard, onDeleteCard, onAwa
     setPracticeMode(true);
     setShowConfig(false);
     setLastResult(null);
+    setHasSavedSession(false);
+  };
+
+  const resumePractice = () => {
+    const saved = localStorage.getItem('flashcards_session');
+    if (!saved) return;
+    
+    try {
+      const p = JSON.parse(saved);
+      setSessionCards(p.sessionCards);
+      setCurrentIndex(p.currentIndex);
+      setCorrectCount(p.correctCount);
+      setIncorrectCount(p.incorrectCount);
+      setReviewCount(p.reviewCount);
+      setInitialSessionSize(p.initialSessionSize);
+      setIsQuickReview(p.isQuickReview);
+      setSideMode(p.sideMode || 'front');
+      setShuffleOrder(p.shuffleOrder !== undefined ? p.shuffleOrder : true);
+      
+      setPracticeMode(true);
+      setShowSummary(false);
+      setLastResult(null);
+      setHasSavedSession(false);
+    } catch (e) {
+      localStorage.removeItem('flashcards_session');
+      setHasSavedSession(false);
+    }
   };
 
   const startQuickReview = () => {
-    // 1. Get cards due for review (nextReview <= now)
-    // 2. Mix with some new cards (never reviewed)
     const reviewedCards = cards.filter(c => c.lastReview && (!c.nextReview || c.nextReview <= now));
     const newCards = cards.filter(c => !c.lastReview);
     
-    // Sort reviewed cards by "overdueness" if possible, otherwise just shuffle
-    let toReview = [...reviewedCards].sort(() => Math.random() - 0.5).slice(0, 5);
+    // Priority: Lower easeFactor cards first (they are harder)
+    let toReview = [...reviewedCards].sort((a, b) => (a.easeFactor || 2.5) - (b.easeFactor || 2.5)).slice(0, 5);
     let toLearn = [...newCards].sort(() => Math.random() - 0.5).slice(0, 3);
     
     const combined = [...toReview, ...toLearn].sort(() => Math.random() - 0.5);
@@ -99,6 +163,8 @@ export function Flashcards({ cards, onAddCard, onUpdateCard, onDeleteCard, onAwa
 
     setIsQuickReview(true);
     setSessionCards(prepared);
+    setInitialSessionSize(prepared.length);
+    setReviewCount(0);
     setCurrentIndex(0);
     setCorrectCount(0);
     setIncorrectCount(0);
@@ -109,35 +175,59 @@ export function Flashcards({ cards, onAddCard, onUpdateCard, onDeleteCard, onAwa
   };
 
   const handleAdd = () => {
-    if (newFront.trim() && newBack.trim()) {
-      onAddCard(newFront, newBack, newCategory.trim() || 'Geral');
-      setNewFront('');
-      setNewBack('');
-      setNewCategory('Geral');
-      setIsAdding(false);
+    if (!newFront.trim() || !newBack.trim()) {
+      setError('Por favor, preencha tanto a frente quanto o verso do cartão.');
+      if (soundEnabled) soundService.playIncorrect();
+      return;
     }
+
+    onAddCard(newFront, newBack, newCategory.trim() || 'Geral');
+    setNewFront('');
+    setNewBack('');
+    setNewCategory('Geral');
+    setError(null);
+    setIsAdding(false);
   };
 
   const nextCard = (correct: boolean) => {
     setLastResult(correct ? 'correct' : 'incorrect');
     
-    // Spaced Repetition Logic (Updated SM-2 Simplified)
+    // Spaced Repetition Logic (SM-2 Simplified)
     const card = sessionCards[currentIndex];
     const newCardData = { ...card };
+    
+    // Quality mapping for SM-2 (0-5)
+    // 5 = Perfect, 4 = Correct (after slight hesitation), 3 = Correct (difficult)
+    // 0 = Total blackout
+    const quality = correct ? 5 : 0;
     
     if (correct) {
       onAwardPoints(5);
       setCorrectCount(prev => prev + 1);
       if (soundEnabled) soundService.playCorrect();
       
-      // Update SR data
-      const easeFactor = card.easeFactor || 2.5;
-      const reps = (card.reps || 0) + 1;
-      let interval = card.interval || 1;
+      let easeFactor = card.easeFactor || 2.5;
+      let reps = (card.reps || 0);
+      let interval = card.interval || 0;
       
-      if (reps === 1) interval = 1;
-      else if (reps === 2) interval = 6;
-      else interval = Math.round(interval * easeFactor);
+      // Standard SM-2 Algorithm
+      if (quality >= 3) {
+        if (reps === 0) {
+          interval = 1;
+        } else if (reps === 1) {
+          interval = 6;
+        } else {
+          interval = Math.round(interval * easeFactor);
+        }
+        reps++;
+      } else {
+        reps = 0;
+        interval = 1;
+      }
+      
+      // Update ease factor
+      easeFactor = easeFactor + (0.1 - (5 - quality) * (0.08 + (5 - quality) * 0.02));
+      easeFactor = Math.max(1.3, easeFactor);
       
       newCardData.reps = reps;
       newCardData.interval = interval;
@@ -146,13 +236,21 @@ export function Flashcards({ cards, onAddCard, onUpdateCard, onDeleteCard, onAwa
       newCardData.nextReview = Date.now() + interval * 24 * 60 * 60 * 1000;
     } else {
       setIncorrectCount(prev => prev + 1);
+      setReviewCount(prev => prev + 1);
       if (soundEnabled) soundService.playIncorrect();
       
-      // Reset SR data on failure
+      let easeFactor = card.easeFactor || 2.5;
+      // Drop ease factor on incorrect
+      easeFactor = Math.max(1.3, easeFactor - 0.2);
+
       newCardData.reps = 0;
       newCardData.interval = 1;
+      newCardData.easeFactor = easeFactor;
       newCardData.lastReview = Date.now();
-      newCardData.nextReview = Date.now() + 1 * 24 * 60 * 60 * 1000; // Review again tomorrow
+      newCardData.nextReview = Date.now() + 1 * 60 * 60 * 1000; // Review in 1 hour if totally failed
+
+      // QUEUE FOR RE-STUDY: Add same card to the end of currently active session
+      setSessionCards(prev => [...prev, card]);
     }
 
     // Call onUpdateCard to persist changes
@@ -161,11 +259,52 @@ export function Flashcards({ cards, onAddCard, onUpdateCard, onDeleteCard, onAwa
     setIsFlipped(false);
     setTimeout(() => {
       setLastResult(null);
+      setNextIsSuggestion(false);
+      
       if (currentIndex === sessionCards.length - 1) {
         setShowSummary(true);
         onAwardPoints(20); // Bonus for finishing session
+        localStorage.removeItem('flashcards_session');
       } else {
-        setCurrentIndex((prev) => (prev + 1) % sessionCards.length);
+        // Maintain flow: suggest next card of similar category or difficulty
+        if (correct) {
+          const nextIndex = currentIndex + 1;
+          const remaining = sessionCards.slice(nextIndex);
+          const currentCard = sessionCards[currentIndex];
+          
+          let bestIdx = -1;
+          let maxScore = -1;
+          
+          remaining.forEach((card, idx) => {
+            let score = 0;
+            // Primary matches: Category
+            if (card.category && currentCard.category && card.category === currentCard.category) {
+              score += 50;
+            }
+            
+            // Secondary match: Similar difficulty (easeFactor)
+            const cardEase = card.easeFactor || 2.5;
+            const currentEase = currentCard.easeFactor || 2.5;
+            const easeDiff = Math.abs(cardEase - currentEase);
+            score += (1 - easeDiff) * 20;
+
+            if (score > maxScore) {
+              maxScore = score;
+              bestIdx = idx;
+            }
+          });
+
+          // If we found a better candidate that isn't the immediate next card
+          if (bestIdx > 0 && maxScore > 30) {
+            const newSession = [...sessionCards];
+            const bestCard = newSession.splice(nextIndex + bestIdx, 1)[0];
+            newSession.splice(nextIndex, 0, bestCard);
+            setSessionCards(newSession);
+            setNextIsSuggestion(true);
+          }
+        }
+        
+        setCurrentIndex((prev) => prev + 1);
       }
     }, 400);
   };
@@ -206,7 +345,10 @@ export function Flashcards({ cards, onAddCard, onUpdateCard, onDeleteCard, onAwa
                 <RotateCcw size={18} /> Tentar Novamente
               </button>
               <button 
-                onClick={() => setPracticeMode(false)}
+                onClick={() => {
+                  setPracticeMode(false);
+                  localStorage.removeItem('flashcards_session');
+                }}
                 className="px-10 py-4 bg-slate-100 text-slate-600 rounded-2xl font-bold hover:bg-slate-200 transition-all"
               >
                 Voltar ao Baralho
@@ -217,8 +359,8 @@ export function Flashcards({ cards, onAddCard, onUpdateCard, onDeleteCard, onAwa
       );
     }
 
-    const totalAnswered = correctCount + incorrectCount;
-    const progress = (totalAnswered / sessionCards.length) * 100;
+    const totalAnswered = correctCount; // Only count correctly answered as completed in the flow
+    const progress = (totalAnswered / initialSessionSize) * 100;
     const card = sessionCards[currentIndex];
 
     return (
@@ -234,23 +376,23 @@ export function Flashcards({ cards, onAddCard, onUpdateCard, onDeleteCard, onAwa
             <div className="flex items-center gap-6">
               <div className="flex items-center gap-4">
                 <div className="flex flex-col items-end">
-                  <span className="text-[10px] font-black uppercase tracking-widest text-emerald-600/50 leading-none mb-1">Corretos</span>
+                  <span className="text-[10px] font-black uppercase tracking-widest text-emerald-600/50 leading-none mb-1">Aprendidos</span>
                   <span className="flex items-center gap-1.5 text-emerald-600 font-black text-lg leading-none">
                     <Check size={18} className="translate-y-[-1px]" /> {correctCount}
                   </span>
                 </div>
                 <div className="flex flex-col items-end">
-                  <span className="text-[10px] font-black uppercase tracking-widest text-red-500/50 leading-none mb-1">Errados</span>
-                  <span className="flex items-center gap-1.5 text-red-500 font-black text-lg leading-none">
-                    <X size={18} className="translate-y-[-1px]" /> {incorrectCount}
+                  <span className="text-[10px] font-black uppercase tracking-widest text-amber-500/50 leading-none mb-1">Revisões</span>
+                  <span className="flex items-center gap-1.5 text-amber-500 font-black text-lg leading-none">
+                    <RotateCcw size={16} className="translate-y-[-1px]" /> {reviewCount}
                   </span>
                 </div>
               </div>
               <div className="h-8 w-px bg-slate-100" />
               <div className="text-right">
-                <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 leading-none mb-1 block">Progresso</span>
+                <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 leading-none mb-1 block">Faltam</span>
                 <span className="text-slate-900 font-black text-lg leading-none block">
-                  {currentIndex + 1} <span className="text-slate-300">/</span> {sessionCards.length}
+                  {Math.max(0, initialSessionSize - correctCount)}
                 </span>
               </div>
             </div>
@@ -316,6 +458,15 @@ export function Flashcards({ cards, onAddCard, onUpdateCard, onDeleteCard, onAwa
                 <span className="bento-label mb-6 flex items-center gap-2">
                   {card.frontLabel}
                   {card.imageUrl && <Sparkles size={10} className="text-emerald-500 fill-current" title="Visual por IA" />}
+                  {nextIsSuggestion && (
+                    <motion.span 
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      className="ml-2 px-2 py-0.5 bg-amber-50 text-amber-600 border border-amber-100 rounded-full text-[8px] font-black uppercase tracking-tight flex items-center gap-1 shadow-sm"
+                    >
+                      <Shuffle size={8} /> Sugestão de Fluxo
+                    </motion.span>
+                  )}
                 </span>
                 <h3 className="text-4xl md:text-5xl font-bold text-slate-900 tracking-tight break-words">{card.displayFront}</h3>
                 <p className="mt-12 text-slate-400 text-xs font-bold tracking-widest uppercase mb-4">Clique para revelar</p>
@@ -331,21 +482,26 @@ export function Flashcards({ cards, onAddCard, onUpdateCard, onDeleteCard, onAwa
           </motion.div>
         </div>
 
-        <div className="mt-12 flex justify-center gap-6">
-          <button 
-            disabled={!!lastResult}
-            onClick={() => nextCard(false)}
-            className="w-16 h-16 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-400 hover:text-red-500 hover:border-red-200 transition-all shadow-sm disabled:opacity-50"
-          >
-            <X size={24} />
-          </button>
-          <button 
-            disabled={!!lastResult}
-            onClick={() => nextCard(true)}
-            className="w-16 h-16 rounded-full bg-emerald-600 flex items-center justify-center text-white hover:bg-emerald-700 transition-all shadow-xl shadow-emerald-600/20 disabled:opacity-50"
-          >
-            <Check size={24} />
-          </button>
+        <div className="mt-12 flex flex-col items-center gap-6">
+          <div className="flex justify-center gap-6 w-full">
+            <button 
+              disabled={!!lastResult}
+              onClick={() => nextCard(false)}
+              className="flex-1 max-w-[200px] h-16 rounded-2xl bg-white border border-slate-200 flex items-center justify-center gap-2 text-slate-500 hover:text-amber-600 hover:border-amber-200 transition-all shadow-sm active:scale-95 disabled:opacity-50 font-bold"
+            >
+              <RotateCcw size={20} /> Preciso Revisar
+            </button>
+            <button 
+              disabled={!!lastResult}
+              onClick={() => nextCard(true)}
+              className="flex-1 max-w-[200px] h-16 rounded-2xl bg-emerald-600 flex items-center justify-center gap-2 text-white hover:bg-emerald-700 transition-all shadow-xl shadow-emerald-600/20 active:scale-95 disabled:opacity-50 font-bold"
+            >
+              <Check size={20} /> Aprendido
+            </button>
+          </div>
+          <p className="text-slate-400 text-xs font-medium italic">
+            Cards marcados para revisão reaparecerão no final desta sessão.
+          </p>
         </div>
       </div>
     );
@@ -359,6 +515,15 @@ export function Flashcards({ cards, onAddCard, onUpdateCard, onDeleteCard, onAwa
           <p className="text-slate-500 font-medium">Memorize vocabulário com repetição espaçada.</p>
         </div>
         <div className="flex flex-wrap gap-4">
+          {hasSavedSession && (
+            <button 
+              onClick={resumePractice}
+              className="px-8 py-3 bg-amber-50 text-amber-600 border-2 border-amber-200 rounded-2xl font-bold hover:bg-amber-600 hover:text-white transition-all flex items-center gap-2"
+            >
+              <RotateCcw size={18} /> Continuar Treino
+            </button>
+          )}
+
           <div className="relative group">
             <button 
               onClick={startQuickReview}
@@ -381,11 +546,14 @@ export function Flashcards({ cards, onAddCard, onUpdateCard, onDeleteCard, onAwa
               onClick={() => setShowConfig(true)}
               className="px-8 py-3 bg-slate-100 text-slate-600 rounded-2xl font-bold hover:bg-emerald-600 hover:text-white transition-all flex items-center gap-2"
             >
-              <RotateCcw size={18} /> Praticar Tudo
+              <Sparkles size={18} /> Estudar Baralho
             </button>
           )}
           <button 
-            onClick={() => setIsAdding(true)}
+            onClick={() => {
+              setIsAdding(true);
+              setError(null);
+            }}
             className="px-8 py-3 bg-emerald-600 text-white rounded-2xl font-bold hover:bg-emerald-700 transition-all flex items-center gap-2 shadow-lg shadow-emerald-600/20"
           >
             <Plus size={18} /> Novo Card
@@ -551,9 +719,14 @@ export function Flashcards({ cards, onAddCard, onUpdateCard, onDeleteCard, onAwa
                 <input 
                   type="text" 
                   value={newFront}
-                  onChange={(e) => setNewFront(e.target.value)}
+                  onChange={(e) => {
+                    setNewFront(e.target.value);
+                    if (error) setError(null);
+                  }}
                   placeholder="Ex: Verda Birdo"
-                  className="w-full p-4 bg-white border border-slate-200 rounded-2xl outline-none focus:border-emerald-500 transition-colors font-bold"
+                  className={`w-full p-4 bg-white border rounded-2xl outline-none transition-all font-bold ${
+                    error && !newFront.trim() ? 'border-red-500 bg-red-50 focus:border-red-600' : 'border-slate-200 focus:border-emerald-500'
+                  }`}
                 />
               </div>
               <div>
@@ -561,9 +734,14 @@ export function Flashcards({ cards, onAddCard, onUpdateCard, onDeleteCard, onAwa
                 <input 
                   type="text" 
                   value={newBack}
-                  onChange={(e) => setNewBack(e.target.value)}
+                  onChange={(e) => {
+                    setNewBack(e.target.value);
+                    if (error) setError(null);
+                  }}
                   placeholder="Ex: Pássaro Verde"
-                  className="w-full p-4 bg-white border border-slate-200 rounded-2xl outline-none focus:border-emerald-500 transition-colors font-bold"
+                  className={`w-full p-4 bg-white border rounded-2xl outline-none transition-all font-bold ${
+                    error && !newBack.trim() ? 'border-red-500 bg-red-50 focus:border-red-600' : 'border-slate-200 focus:border-emerald-500'
+                  }`}
                 />
               </div>
               <div className="md:col-span-2">
@@ -577,6 +755,19 @@ export function Flashcards({ cards, onAddCard, onUpdateCard, onDeleteCard, onAwa
                 />
               </div>
             </div>
+            <AnimatePresence>
+              {error && (
+                <motion.div 
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  className="mb-6 p-4 bg-red-50 border border-red-100 rounded-2xl flex items-center gap-3 text-red-600 text-sm font-bold shadow-sm"
+                >
+                  <X size={18} className="shrink-0" />
+                  {error}
+                </motion.div>
+              )}
+            </AnimatePresence>
             <div className="flex justify-end gap-3">
               <button 
                 onClick={() => setIsAdding(false)}
