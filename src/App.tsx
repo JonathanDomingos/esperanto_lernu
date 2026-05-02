@@ -448,10 +448,10 @@ export default function App() {
                       className={`flex items-center space-x-3 px-6 py-2.5 rounded-2xl text-sm font-semibold transition-all group ${
                         activeTab === item.id 
                           ? 'bg-slate-900 text-white shadow-xl shadow-slate-200' 
-                          : 'text-slate-500 hover:bg-slate-100 hover:text-slate-900'
+                          : 'text-slate-500 hover:bg-emerald-50 hover:text-emerald-700'
                       }`}
                     >
-                      <div className={`p-1.5 rounded-lg transition-colors ${activeTab === item.id ? 'bg-white/10 text-emerald-400' : 'bg-slate-100 text-slate-400 group-hover:text-slate-600'}`}>
+                      <div className={`p-1.5 rounded-lg transition-colors ${activeTab === item.id ? 'bg-white/10 text-emerald-400' : 'bg-slate-100 text-slate-400 group-hover:text-emerald-600 group-hover:bg-white'}`}>
                         <Icon size={18} />
                       </div>
                       <div className="flex flex-col items-start leading-none">
@@ -568,12 +568,12 @@ export default function App() {
                   </AnimatePresence>
                   
                   <div className={`relative z-10 transition-all duration-300 ${
-                    isActive ? 'text-emerald-500 scale-110' : 'text-slate-500'
+                    isActive ? 'text-emerald-500 scale-110' : 'text-slate-400 group-hover:text-emerald-400 group-hover:scale-110'
                   }`}>
                     <Icon size={isActive ? 22 : 20} strokeWidth={isActive ? 3 : 2} />
                   </div>
                   <span className={`relative z-10 text-[9px] font-black uppercase tracking-widest transition-colors duration-300 mt-0.5 ${
-                    isActive ? 'text-emerald-500' : 'text-slate-500'
+                    isActive ? 'text-emerald-500' : 'text-slate-400 group-hover:text-emerald-400'
                   }`}>
                     {item.label === 'Lições Interativas' ? 'Lições' : 
                      item.label === 'Acervo Digital' ? 'Acervo' :
