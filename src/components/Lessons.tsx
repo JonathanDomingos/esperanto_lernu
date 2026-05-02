@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { GoogleGenAI, Type } from "@google/genai";
 import { 
@@ -8,7 +9,7 @@ import {
   AlertCircle, 
   Play, 
   Info, 
-  PlusSquare,
+  Plus,
   Download,
   Cloud,
   Zap,
@@ -125,6 +126,8 @@ const GRAMMAR_HOTSPOTS: GrammarHotspot[] = [
 
 function InteractiveText({ text }: { text: string }) {
   const [activeHotspot, setActiveHotspot] = useState<GrammarHotspot | null>(null);
+
+  if (!text) return null;
 
   // Sorting hotspots by length descending to match longer patterns first
   const sortedHotspots = [...GRAMMAR_HOTSPOTS].sort((a, b) => b.term.length - a.term.length);
@@ -1292,24 +1295,34 @@ function TutorialOverlay({
     let rafId: number;
     
     const updateRect = () => {
-      let el = document.getElementById(activeStep.targetId);
-      // Fallback to content if interaction element isn't in DOM (e.g., on a non-interactive part)
-      if (!el && activeStep.targetId === 'lesson-interaction') {
-        el = document.getElementById('lesson-content');
-      }
+      const el = document.getElementById(activeStep.targetId) || 
+                 (activeStep.targetId === 'lesson-interaction' ? document.getElementById('lesson-content') : null);
+      
       if (el) {
         const newRect = el.getBoundingClientRect();
-        // Update rect if significantly different
-        setRect(newRect);
+        setRect(prev => {
+          if (!prev) return newRect;
+          if (
+            Math.abs(prev.top - newRect.top) < 0.1 &&
+            Math.abs(prev.left - newRect.left) < 0.1 &&
+            Math.abs(prev.width - newRect.width) < 0.1 &&
+            Math.abs(prev.height - newRect.height) < 0.1
+          ) {
+            return prev;
+          }
+          return newRect;
+        });
       }
       rafId = requestAnimationFrame(updateRect);
     };
 
     updateRect();
-    return () => cancelAnimationFrame(rafId);
+    
+    return () => {
+      cancelAnimationFrame(rafId);
+    };
   }, [activeStep]);
 
-  // Use a default rect in center if not found yet to prevent disappearing
   const effectiveRect = rect || {
     top: window.innerHeight / 2 - 50,
     left: window.innerWidth / 2 - 50,
@@ -1325,11 +1338,11 @@ function TutorialOverlay({
     height: effectiveRect.height + padding * 2,
   };
 
-  return (
-    <div className="fixed inset-0 z-[200] pointer-events-none">
+  return createPortal(
+    <div className="fixed inset-0 z-[9999] pointer-events-none overflow-hidden">
       {/* Dimmed Background with Hole */}
       <div 
-        className="absolute inset-0 bg-slate-950/60 transition-opacity duration-500"
+        className="absolute inset-0 bg-slate-950/60 transition-opacity duration-300"
         style={{
           clipPath: `polygon(
             0% 0%, 
@@ -1349,10 +1362,10 @@ function TutorialOverlay({
       {/* Spotlight Border */}
       <motion.div
         layoutId="spotlight"
-        className="absolute border-2 border-emerald-400 rounded-2xl shadow-[0_0_0_9999px_rgba(15,23,42,0.6)]"
+        className="absolute border-2 border-emerald-400 rounded-2xl shadow-[0_0_0_9999px_rgba(15,23,42,0.3)]"
         initial={false}
         animate={spotlightStyle}
-        transition={{ type: 'spring', bounce: 0.2, duration: 0.6 }}
+        transition={{ type: 'spring', bounce: 0, duration: 0.4 }}
       />
 
       {/* Tooltip Content */}
@@ -1364,10 +1377,10 @@ function TutorialOverlay({
           y: 0,
           top: activeStep.position === 'bottom' ? spotlightStyle.top + spotlightStyle.height + 20 : undefined,
           bottom: activeStep.position === 'top' ? (window.innerHeight - spotlightStyle.top) + 20 : undefined,
-          left: rect.left + rect.width / 2,
+          left: Math.max(160, Math.min(window.innerWidth - 160, effectiveRect.left + effectiveRect.width / 2)),
           translateX: '-50%'
         }}
-        className="absolute z-10 w-72 bg-white rounded-3xl shadow-2xl p-6 pointer-events-auto"
+        className="absolute z-[10000] w-80 bg-white rounded-3xl shadow-2xl p-6 pointer-events-auto"
       >
         <h4 className="text-lg font-black text-slate-900 mb-2">{activeStep.title}</h4>
         <p className="text-slate-500 text-sm font-medium mb-6 leading-relaxed">{activeStep.content}</p>
@@ -1381,7 +1394,7 @@ function TutorialOverlay({
           </button>
           <button 
             onClick={onNext}
-            className="bg-emerald-600 text-white px-5 py-2 rounded-xl text-xs font-bold hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-600/20"
+            className="bg-emerald-600 text-white px-5 py-2 rounded-xl text-sm font-bold hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-600/20 active:scale-95"
           >
             {isLast ? 'Entendi!' : 'Próximo'}
           </button>
@@ -1394,7 +1407,8 @@ function TutorialOverlay({
           }`}
         />
       </motion.div>
-    </div>
+    </div>,
+    document.body
   );
 }
 
@@ -2731,7 +2745,7 @@ export function Lessons({
                         }}
                         className="p-2 text-emerald-600 hover:bg-emerald-50 rounded-xl transition-colors shrink-0"
                       >
-                        <PlusSquare size={20} />
+                        <Plus size={20} />
                       </button>
                     </Tooltip>
                   )}
@@ -2775,7 +2789,7 @@ export function Lessons({
                       <div className="px-8 py-5 bg-slate-900 text-white rounded-[2rem] text-3xl font-black shadow-2xl ring-4 ring-slate-100">
                         {part.root}
                       </div>
-                      <PlusSquare className="text-emerald-500 animate-pulse" size={28} />
+                      <Plus className="text-emerald-500 animate-pulse" size={28} />
                       <div className={`px-8 py-5 rounded-[2rem] text-3xl font-black border-4 border-dashed transition-all duration-500 ${
                         selectedOption 
                           ? isCorrect ? 'bg-emerald-50 border-emerald-500 text-emerald-600 scale-105' : 'bg-red-50 border-red-500 text-red-600'
@@ -2959,7 +2973,7 @@ export function Lessons({
                           className="p-2 text-emerald-600 hover:bg-white rounded-xl transition-colors shrink-0"
                           title="Adicionar resposta aos Flashcards"
                         >
-                          <PlusSquare size={16} />
+                          <Plus size={16} />
                         </button>
                       )}
                     </div>
@@ -2983,17 +2997,17 @@ export function Lessons({
                 </div>
               </motion.div>
             </AnimatePresence>
-
-            {showTutorial && (
-              <TutorialOverlay 
-                activeStep={LESSON_TUTORIAL_STEPS[tutorialStepIndex]}
-                onNext={handleNextTutorialStep}
-                onSkip={handleSkipTutorial}
-                isLast={tutorialStepIndex === LESSON_TUTORIAL_STEPS.length - 1}
-              />
-            )}
           </div>
         </div>
+
+        {showTutorial && (
+          <TutorialOverlay 
+            activeStep={LESSON_TUTORIAL_STEPS[tutorialStepIndex]}
+            onNext={handleNextTutorialStep}
+            onSkip={handleSkipTutorial}
+            isLast={tutorialStepIndex === LESSON_TUTORIAL_STEPS.length - 1}
+          />
+        )}
       </div>
     );
   }
@@ -3415,21 +3429,20 @@ export function Lessons({
                 </div>
 
                 {isOnline && (
-                  <Tooltip content={isDownloaded ? 'Disponível Offline' : 'Baixar para Offline'} position="left">
-                    <button 
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onDownload(lesson.id);
-                      }}
-                      className={`absolute bottom-10 right-10 p-3 rounded-2xl transition-all ${
-                        isDownloaded 
-                          ? 'bg-emerald-100 text-emerald-600' 
-                          : 'bg-slate-50 text-slate-400 hover:bg-slate-100'
-                      }`}
-                    >
-                      {isDownloaded ? <CheckCircle2 size={20} /> : <Download size={20} />}
-                    </button>
-                  </Tooltip>
+                  <button 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDownload(lesson.id);
+                    }}
+                    className={`absolute bottom-10 right-10 p-3 rounded-2xl transition-all ${
+                      isDownloaded 
+                        ? 'bg-emerald-100 text-emerald-600' 
+                        : 'bg-slate-50 text-slate-400 hover:bg-slate-100'
+                    }`}
+                    title={isDownloaded ? 'Disponível Offline' : 'Baixar para Offline'}
+                  >
+                    {isDownloaded ? <CheckCircle2 size={20} /> : <Download size={20} />}
+                  </button>
                 )}
                 {!isOnline && isDownloaded && (
                   <div className="absolute bottom-10 right-10 p-3 bg-emerald-50 text-emerald-600 rounded-2xl">
