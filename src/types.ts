@@ -18,6 +18,7 @@ export interface Lesson {
   title: string;
   description: string;
   difficulty?: 'beginner' | 'intermediate' | 'advanced';
+  theme?: string;
   parts: LessonPart[];
 }
 
@@ -25,7 +26,7 @@ export interface ResourceItem {
   title: string;
   description: string;
   url: string;
-  category: 'Video' | 'Course' | 'Community' | 'Dictionary' | 'Reading' | 'Music' | 'Shop';
+  category: 'Vídeos' | 'Cursos' | 'Comunidade' | 'Dicionário' | 'Leitura' | 'Música' | 'Loja';
   icon: string;
 }
 

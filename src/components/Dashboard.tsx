@@ -122,7 +122,7 @@ export function Dashboard({ stats, allBadges, settings, onUpdateSettings }: Dash
                   <span className="text-4xl font-black leading-none">{level}</span>
                 </div>
                 <div className={`absolute -bottom-2 -right-2 w-10 h-10 ${THEMES[sections.progress].primary.replace('text-', 'bg-')} rounded-2xl flex items-center justify-center text-white border-4 border-white shadow-lg animate-bounce`}>
-                  <Trophy size={18} />
+                  <Flame size={18} />
                 </div>
               </div>
             </div>

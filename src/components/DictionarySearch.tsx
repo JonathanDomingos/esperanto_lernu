@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Search, Plus, Book, X } from 'lucide-react';
+import { Search, Plus, Book, X, Check } from 'lucide-react';
 import { DICTIONARY, DictionaryEntry } from '../data/dictionary';
 import { Tooltip } from './ui/Tooltip';
 
@@ -12,6 +12,7 @@ interface DictionarySearchProps {
 export function DictionarySearch({ onAddFlashcard, inline = false }: DictionarySearchProps) {
   const [query, setQuery] = useState('');
   const [isOpen, setIsOpen] = useState(false);
+  const [addedWords, setAddedWords] = useState<Set<string>>(new Set());
 
   const results = useMemo(() => {
     if (!query.trim()) return [];
@@ -21,6 +22,13 @@ export function DictionarySearch({ onAddFlashcard, inline = false }: DictionaryS
       entry.translation.toLowerCase().includes(lowerQuery)
     ).slice(0, 5);
   }, [query]);
+
+  const handleAddFlashcard = (entry: DictionaryEntry) => {
+    onAddFlashcard(entry.word, entry.translation, entry.category);
+    setAddedWords(prev => new Set(prev).add(entry.word));
+    
+    // Auto-clear added state after some time if we want, or keep it to show it's already there
+  };
 
   return (
     <div className={`${inline ? 'w-full' : 'relative z-50'}`}>
@@ -62,34 +70,42 @@ export function DictionarySearch({ onAddFlashcard, inline = false }: DictionaryS
 
             <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
               {results.length > 0 ? (
-                results.map((entry) => (
-                  <motion.div 
-                    key={entry.word}
-                    initial={{ opacity: 0, x: -10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    className="p-4 bg-slate-50 rounded-2xl border border-slate-100 group"
-                  >
-                    <div className="flex justify-between items-start mb-2">
-                      <div>
-                        <span className="text-xs bento-label text-emerald-600">{entry.category}</span>
-                        <h4 className="font-bold text-slate-900 text-lg">{entry.word}</h4>
+                results.map((entry) => {
+                  const isAdded = addedWords.has(entry.word);
+                  return (
+                    <motion.div 
+                      key={entry.word}
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      className="p-4 bg-slate-50 rounded-2xl border border-slate-100 group"
+                    >
+                      <div className="flex justify-between items-start mb-2">
+                        <div>
+                          <span className="text-xs bento-label text-emerald-600">{entry.category}</span>
+                          <h4 className="font-bold text-slate-900 text-lg">{entry.word}</h4>
+                        </div>
+                        <Tooltip content={isAdded ? "Adicionado!" : "Adicionar aos Flashcards"} position="left">
+                          <button 
+                            onClick={() => handleAddFlashcard(entry)}
+                            disabled={isAdded}
+                            className={`p-2 rounded-xl transition-all ${
+                              isAdded 
+                                ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-200' 
+                                : 'bg-white text-slate-400 hover:text-emerald-600 hover:shadow-sm'
+                            }`}
+                          >
+                            {isAdded ? <Check size={18} strokeWidth={3} /> : <Plus size={18} />}
+                          </button>
+                        </Tooltip>
                       </div>
-                      <Tooltip content="Adicionar aos Flashcards" position="left">
-                        <button 
-                          onClick={() => onAddFlashcard(entry.word, entry.translation, entry.category)}
-                          className="p-2 bg-white text-slate-400 hover:text-emerald-600 hover:shadow-sm rounded-xl transition-all"
-                        >
-                          <Plus size={18} />
-                        </button>
-                      </Tooltip>
-                    </div>
-                    <p className="text-slate-600 font-medium text-sm mb-3">{entry.translation}</p>
-                    <div className="bg-white/50 p-3 rounded-xl border border-white">
-                      <p className="text-[11px] italic text-slate-500 mb-1">"{entry.example}"</p>
-                      <p className="text-[10px] text-slate-400">{entry.exampleTranslation}</p>
-                    </div>
-                  </motion.div>
-                ))
+                      <p className="text-slate-600 font-medium text-sm mb-3">{entry.translation}</p>
+                      <div className="bg-white/50 p-3 rounded-xl border border-white">
+                        <p className="text-[11px] italic text-slate-500 mb-1">"{entry.example}"</p>
+                        <p className="text-[10px] text-slate-400">{entry.exampleTranslation}</p>
+                      </div>
+                    </motion.div>
+                  );
+                })
               ) : query.trim() ? (
                 <div className="text-center py-8">
                   <p className="text-slate-400 text-sm">Nenhuma palavra encontrada.</p>

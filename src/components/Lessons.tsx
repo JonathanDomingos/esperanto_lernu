@@ -38,6 +38,7 @@ import {
   BookOpen,
   RotateCcw,
   LayoutGrid,
+  Volume2,
   Map as MapIcon
 } from 'lucide-react';
 
@@ -65,6 +66,181 @@ const renderPartIcon = (name: string) => {
     default: return <Info size={40} />;
   }
 };
+
+function LessonLoading({ category, message }: { category?: string, message?: string }) {
+  return (
+    <motion.div 
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="w-full flex flex-col items-center justify-center p-12 md:p-20 bg-slate-50/50 rounded-[3rem] border-2 border-dashed border-slate-200 text-center space-y-8 min-h-[400px]"
+    >
+      <div className="relative">
+        <motion.div 
+          animate={{ rotate: 360 }}
+          transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+          className="w-24 h-24 border-t-4 border-b-4 border-emerald-500 rounded-full"
+        />
+        <motion.div 
+          animate={{ 
+            scale: [1, 1.2, 1],
+            rotate: [0, 10, -10, 0]
+          }}
+          transition={{ duration: 2, repeat: Infinity }}
+          className="absolute inset-0 flex items-center justify-center text-emerald-600"
+        >
+          <Sparkles size={32} />
+        </motion.div>
+      </div>
+      <div className="max-w-md">
+        <h3 className="text-2xl font-black text-slate-800 mb-2">
+          {message || "Preparando o Conteúdo Especial..."}
+        </h3>
+        <p className="text-slate-500 font-medium">
+          {category ? `Configurando recursos de ${category} para você.` : "Aguarde enquanto carregamos ferramentas dinâmicas e dados gramaticais."}
+        </p>
+      </div>
+      <div className="flex gap-3">
+        {[0, 1, 2].map((i) => (
+          <motion.div
+            key={i}
+            animate={{ 
+              y: [0, -15, 0],
+              backgroundColor: ['#10b981', '#34d399', '#10b981']
+            }}
+            transition={{ duration: 0.8, repeat: Infinity, delay: i * 0.15 }}
+            className="w-4 h-4 bg-emerald-500 rounded-full shadow-lg shadow-emerald-500/20"
+          />
+        ))}
+      </div>
+    </motion.div>
+  );
+}
+
+function ImageWithLoader({ src, alt }: { src: string, alt: string }) {
+  const [isLoaded, setIsLoaded] = useState(false);
+
+  return (
+    <div className="relative w-full h-full">
+      <AnimatePresence>
+        {!isLoaded && (
+          <div className="absolute inset-0 z-10 bg-slate-50">
+             <LessonLoading 
+               category="Imagem" 
+               message="Carregando imagem ilustrativa..." 
+             />
+          </div>
+        )}
+      </AnimatePresence>
+      <img 
+        src={src} 
+        alt={alt}
+        onLoad={() => setIsLoaded(true)}
+        className={`w-full h-full object-cover transition-opacity duration-700 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}
+        referrerPolicy="no-referrer"
+      />
+    </div>
+  );
+}
+
+function PronounceButton({ word }: { word: string }) {
+  const [isPlaying, setIsPlaying] = useState(false);
+
+  const speak = () => {
+    if ('speechSynthesis' in window) {
+      // Cancel any ongoing speech
+      window.speechSynthesis.cancel();
+
+      const utterance = new SpeechSynthesisUtterance(word);
+      
+      // Try to find a clear voice, prefer Italian or Polish as they share similar phonetic patterns with Esperanto
+      const voices = window.speechSynthesis.getVoices();
+      const preferredVoice = voices.find(v => v.lang.startsWith('eo')) || 
+                             voices.find(v => v.lang.startsWith('it')) || 
+                             voices.find(v => v.lang.startsWith('pl')) ||
+                             voices[0];
+      
+      if (preferredVoice) utterance.voice = preferredVoice;
+      
+      // Adjusted for Esperanto's clear vowels and regular stress
+      utterance.rate = 0.85;
+      utterance.pitch = 1.0;
+      
+      utterance.onstart = () => setIsPlaying(true);
+      utterance.onend = () => setIsPlaying(false);
+      utterance.onerror = () => setIsPlaying(false);
+
+      window.speechSynthesis.speak(utterance);
+    }
+  };
+
+  return (
+    <button
+      onClick={(e) => {
+        e.stopPropagation();
+        speak();
+      }}
+      className={`inline-flex items-center justify-center w-8 h-8 rounded-full transition-all ${
+        isPlaying 
+          ? 'bg-emerald-500 text-white scale-110 shadow-lg shadow-emerald-200' 
+          : 'bg-emerald-50 text-emerald-600 hover:bg-emerald-500 hover:text-white hover:scale-110 active:scale-95'
+      }`}
+      title={`Ouvir pronúncia de: ${word}`}
+    >
+      <Volume2 size={14} className={isPlaying ? 'animate-pulse' : ''} />
+    </button>
+  );
+}
+
+function NextLessonCard({ lesson, onClick }: { lesson: any, onClick: () => void }) {
+  return (
+    <motion.div
+      whileHover={{ scale: 1.02, y: -5 }}
+      whileTap={{ scale: 0.98 }}
+      onClick={onClick}
+      className="mt-12 p-8 bg-white rounded-[32px] border-2 border-emerald-100 shadow-xl shadow-emerald-500/5 cursor-pointer group transition-all hover:border-emerald-500 max-w-md mx-auto text-left relative overflow-hidden"
+    >
+      <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity pointer-events-none transform translate-x-1/4 -translate-y-1/4 scale-[2]">
+        <Play size={48} className="fill-current text-emerald-600" />
+      </div>
+
+      <div className="flex items-center gap-3 mb-4">
+        <div className="px-3 py-1 bg-emerald-50 text-emerald-600 rounded-lg text-[10px] font-black uppercase tracking-widest border border-emerald-100">
+          Próxima Lição
+        </div>
+        {lesson.theme && (
+          <div className="px-3 py-1 bg-blue-50 text-blue-600 rounded-lg text-[10px] font-black uppercase tracking-widest border border-blue-100">
+            {lesson.theme}
+          </div>
+        )}
+      </div>
+      
+      <h4 className="text-2xl font-black text-slate-900 mb-2 group-hover:text-emerald-600 transition-colors">
+        {lesson.title}
+      </h4>
+      <p className="text-slate-500 font-medium line-clamp-2 mb-6">
+        {lesson.description}
+      </p>
+
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+            <div className={`w-2 h-2 rounded-full ${
+              lesson.difficulty === 'beginner' ? 'bg-emerald-400' :
+              lesson.difficulty === 'intermediate' ? 'bg-amber-400' : 'bg-rose-400'
+            }`} />
+            <span className="text-xs font-black uppercase tracking-widest text-slate-400">
+              {lesson.difficulty === 'beginner' ? 'Iniciante' :
+               lesson.difficulty === 'intermediate' ? 'Intermediário' : 'Avançado'}
+            </span>
+        </div>
+        <div className="flex items-center gap-2 text-emerald-600 font-black text-sm uppercase tracking-widest">
+           Começar Agora
+           <ChevronRight size={18} />
+        </div>
+      </div>
+    </motion.div>
+  );
+}
 
 interface GrammarHotspot {
   term: string;
@@ -180,7 +356,10 @@ function InteractiveText({ text }: { text: string }) {
                         </div>
                         <span className="font-black text-emerald-700 uppercase tracking-widest text-[10px]">Dica Rápida</span>
                       </div>
-                      <h4 className="text-slate-900 font-bold mb-2">Gramática: "{hotspot.term}"</h4>
+                      <div className="flex items-center justify-between gap-4 mb-2">
+                        <h4 className="text-slate-900 font-bold">Gramática: "{hotspot.term}"</h4>
+                        <PronounceButton word={hotspot.term} />
+                      </div>
                       <p className="text-slate-600 text-sm mb-3 leading-relaxed">{hotspot.explanation}</p>
                       
                       {hotspot.longExplanation && (
@@ -199,8 +378,9 @@ function InteractiveText({ text }: { text: string }) {
                       <div className="space-y-1.5">
                         <span className="text-[10px] font-bold text-slate-400 border-b border-slate-100 pb-1 mb-2 block uppercase tracking-tighter">Exemplos Adicionais</span>
                         {hotspot.examples.map((ex, idx) => (
-                          <div key={idx} className="bg-slate-50 px-3 py-2 rounded-xl text-xs font-bold text-emerald-700 border border-emerald-50/50">
-                            {ex}
+                          <div key={idx} className="bg-slate-50 px-3 py-2 rounded-xl text-xs font-bold text-emerald-700 border border-emerald-50/50 flex items-center justify-between gap-2">
+                            <span>{ex}</span>
+                            <PronounceButton word={ex.split(' (')[0].replace(/"/g, '')} />
                           </div>
                         ))}
                       </div>
@@ -546,16 +726,10 @@ function AffixExplorer() {
             )}
 
             {isLoading && (
-              <motion.div
-                key="loading"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="h-full flex flex-col items-center justify-center p-12 bg-emerald-50/50 rounded-[3rem] border-2 border-emerald-100 text-center space-y-6"
-              >
-                <div className="w-20 h-20 border-8 border-emerald-200 border-t-emerald-500 rounded-full animate-spin" />
-                <p className="text-emerald-700 font-black text-xl">O Mestre de IA está decodificando a morfologia...</p>
-              </motion.div>
+              <LessonLoading 
+                category="Morfologia" 
+                message="O Mestre de IA está decodificando a morfologia..." 
+              />
             )}
 
             {explanation && (
@@ -672,6 +846,7 @@ const MANUAL_LESSONS: Lesson[] = [
     id: 'l1',
     title: 'Fundamentos: Saudações e o Verbo Esti',
     description: 'Aprenda a cumprimentar, se apresentar e usar o verbo mais importante.',
+    theme: 'Saudações',
     parts: [
       { type: 'text', content: 'Saluton! O Esperanto é uma língua projetada para ser simples e lógica. "Saluton" é a saudação universal, derivada de "Saluti" (Saudar).' },
       { type: 'icon', content: 'Boas-vindas', iconName: 'smile' },
@@ -695,6 +870,7 @@ const MANUAL_LESSONS: Lesson[] = [
     id: 'l2',
     title: 'Gramática: O e A (Substantivos e Adjetivos)',
     description: 'A regra de ouro: como distinguir nomes de qualidades e criar novas palavras.',
+    theme: 'Gramática',
     parts: [
       { type: 'icon', content: 'Lógica Pura', iconName: 'zap' },
       { type: 'text', content: 'No Esperanto, a terminação das palavras revela sua função gramatical. É como uma etiqueta que diz o que a palavra é.' },
@@ -716,6 +892,7 @@ const MANUAL_LESSONS: Lesson[] = [
     id: 'l3',
     title: 'Verbos: O Tempo das Coisas (Presente, Passado e Futuro)',
     description: 'Domine os verbos sem tabelas infinitas de conjugação.',
+    theme: 'Verbos',
     parts: [
       { type: 'text', content: 'Verbos em português são complexos. Em Esperanto, eles são um alívio! Não existem conjugações por pessoa (eu, tu, ele...).' },
       { type: 'example', content: 'O infinitivo (forma base) termina em -i. "Lerni" (Aprender), "Manĝi" (Comer), "Labori" (Trabalhar).' },
@@ -737,6 +914,7 @@ const MANUAL_LESSONS: Lesson[] = [
     id: 'l4',
     title: 'O Plural (-j) e os Advérbios (-e)',
     description: 'Como falar de grupos e descrever como as ações acontecem.',
+    theme: 'Gramática',
     parts: [
       { type: 'text', content: 'Para indicar plural no Esperanto, adicionamos a letra -j ao final da palavra. Ela tem som de "i" curto (como na palavra "lei").' },
       { type: 'example', content: '"Domo" (casa) -> "Domoj" (casas). "Amiko" (amigo) -> "Amikoj" (amigos).' },
@@ -763,6 +941,7 @@ const MANUAL_LESSONS: Lesson[] = [
     id: 'l5',
     title: 'O Famoso Acusativo (-n)',
     description: 'A ferramenta secreta para liberdade total na ordem das palavras.',
+    theme: 'Gramática',
     parts: [
       { type: 'text', content: 'O sufixo -n é usado para marcar o "Objeto Direto" — ou seja, quem ou o que recebe a ação do verbo.' },
       { type: 'question', content: 'Qual destas frases usa o acusativo INCORRETAMENTE?', options: ['Mi vidas domon', 'Mi vidas la domo', 'Domon vidas mi'], correctAnswer: 'Mi vidas la domo', explanation: 'O objeto (casa) deve obrigatoriamente receber o -n do acusativo, não importa a ordem das palavras.' },
@@ -1135,6 +1314,7 @@ const GENERATED_LESSONS: Lesson[] = Array.from({ length: 90 }, (_, i) => {
     id: `l${idNum}`,
     title: `${theme.name}: Módulo ${Math.floor(i / THEMES.length) + 1}`,
     description: `Lição ${idNum}: Vocabulário aplicado de ${theme.name.toLowerCase()} (${term} e ${nextTerm}).`,
+    theme: theme.name,
     parts: lessonParts
   };
 });
@@ -1145,6 +1325,7 @@ const ADVANCED_LESSONS: Lesson[] = [
     title: 'Aprofundamento: Os Correlativos',
     description: 'Entenda a matriz lógica dos 45 correlativos que formam a espinha dorsal da precisão no Esperanto.',
     difficulty: 'advanced',
+    theme: 'Gramática',
     parts: [
       { type: 'text', content: 'Os correlativos são palavras que se relacionam de forma sistemática. Eles são formados por um radical de "pergunta/indicação" e um radical de "tipo".' },
       { type: 'icon', content: 'Matriz Lógica', iconName: 'zap' },
@@ -1162,6 +1343,7 @@ const ADVANCED_LESSONS: Lesson[] = [
     title: 'Nuances: O Sufixo -UM-',
     description: 'O sufixo "coringa" que não tem um sentido definido, mas cria relações intuitivas.',
     difficulty: 'advanced',
+    theme: 'Sufixos',
     parts: [
       { type: 'text', content: 'O sufixo -UM- é o mais flexível e indefinido do Esperanto. Ele indica uma relação vaga com a raiz.' },
       { type: 'example', content: '"Kolo" (Pescoço) -> "Kolumo" (Colarinho). "Butono" (Botão) -> "Butonumi" (Abotoar).' },
@@ -1176,6 +1358,7 @@ const ADVANCED_LESSONS: Lesson[] = [
     title: 'Cultura: O Idealismo (Interna Ideo)',
     description: 'Explore a filosofia por trás da língua e o impacto social do movimento esperantista.',
     difficulty: 'advanced',
+    theme: 'Cultura',
     parts: [
       { type: 'text', content: 'O Esperanto não é apenas uma gramática; ele carrega a "Interna Ideo" (Ideia Interna): a promoção da paz e compreensão mútua.' },
       { type: 'icon', content: 'Idealismo', iconName: 'globe' },
@@ -1190,6 +1373,7 @@ const ADVANCED_LESSONS: Lesson[] = [
     title: 'Estilo: Literatura e Poesia',
     description: 'A flexibilidade do Esperanto na arte. Como a ordem das palavras e as rimas funcionam.',
     difficulty: 'advanced',
+    theme: 'Estilo',
     parts: [
       { type: 'text', content: 'O Esperanto é extremamente maleável. Graças ao acusativo (-n), você pode mudar a ordem das palavras para criar ênfase ou rimas sem mudar o sentido básico.' },
       { type: 'example', content: 'Normal: "Mi amas vin". Poético: "Vin amas mi" ou "Amas mi vin".' },
@@ -1205,6 +1389,7 @@ const ADVANCED_LESSONS: Lesson[] = [
     title: 'Mestre das Palavras: Oficina de Afixos',
     description: 'Transforme-se em um arquiteto da língua. Aprenda a descompor e construir palavras complexas usando a lógica infinita do Esperanto.',
     difficulty: 'advanced',
+    theme: 'Gramática',
     parts: [
       { type: 'text', content: 'Nesta oficina avançada, você verá como o Esperanto funciona como um sistema modular. Uma única raiz pode gerar dezenas de conceitos relacionados apenas colando afixos.' },
       { type: 'icon', content: 'Engenharia Linguística', iconName: 'code' },
@@ -1823,6 +2008,7 @@ export function Lessons({
   const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
   const [focusedOptionIndex, setFocusedOptionIndex] = useState<number>(-1);
   const [isLessonFinished, setIsLessonFinished] = useState(false);
+  const [isLessonTransitioning, setIsLessonTransitioning] = useState(false);
   const [orderedWords, setOrderedWords] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const lessonContainerRef = useRef<HTMLDivElement>(null);
@@ -1872,11 +2058,28 @@ export function Lessons({
     const currentIndex = SAMPLE_LESSONS.findIndex(l => l.id === selectedLesson.id);
     if (currentIndex === -1) return null;
     
-    // Try to find the next lesson of the same difficulty
-    const sameLevelNext = SAMPLE_LESSONS.slice(currentIndex + 1).find(l => l.difficulty === selectedLesson.difficulty);
+    const remainingLessons = SAMPLE_LESSONS.slice(currentIndex + 1);
+
+    // 1. Same theme AND same difficulty
+    const sameThemeSameLevel = remainingLessons.find(l => 
+      l.difficulty === selectedLesson.difficulty && 
+      l.theme === selectedLesson.theme &&
+      l.theme !== undefined
+    );
+    if (sameThemeSameLevel) return sameThemeSameLevel;
+
+    // 2. Same theme (any difficulty)
+    const sameThemeNext = remainingLessons.find(l => 
+      l.theme === selectedLesson.theme &&
+      l.theme !== undefined
+    );
+    if (sameThemeNext) return sameThemeNext;
+
+    // 3. Same difficulty
+    const sameLevelNext = remainingLessons.find(l => l.difficulty === selectedLesson.difficulty);
     if (sameLevelNext) return sameLevelNext;
     
-    // Fallback: next sequential lesson in the entire list
+    // 4. Fallback: next sequential
     if (currentIndex < SAMPLE_LESSONS.length - 1) return SAMPLE_LESSONS[currentIndex + 1];
     
     return null;
@@ -2095,10 +2298,14 @@ export function Lessons({
       setPendingLesson(lesson);
       setShowResumePrompt(true);
     } else {
-      setSelectedLesson(lesson);
-      setCurrentPartIndex(0);
-      setMaxVisitedIndex(0);
-      setIsLessonFinished(false);
+      setIsLessonTransitioning(true);
+      setTimeout(() => {
+        setSelectedLesson(lesson);
+        setCurrentPartIndex(0);
+        setMaxVisitedIndex(0);
+        setIsLessonFinished(false);
+        setIsLessonTransitioning(false);
+      }, 800);
       
       // If it's the first lesson and player hasn't seen tutorial yet, and starting fresh
       if (lesson.id === 'l1' && !hasSeenTutorial) {
@@ -2112,12 +2319,16 @@ export function Lessons({
     if (!pendingLesson) return;
     const progress = lessonProgress[pendingLesson.id] || 0;
     
-    setSelectedLesson(pendingLesson);
-    setCurrentPartIndex(resume ? progress : 0);
-    setMaxVisitedIndex(resume ? progress : 0);
-    setIsLessonFinished(false);
-    setShowResumePrompt(false);
-    setPendingLesson(null);
+    setIsLessonTransitioning(true);
+    setTimeout(() => {
+      setSelectedLesson(pendingLesson);
+      setCurrentPartIndex(resume ? progress : 0);
+      setMaxVisitedIndex(resume ? progress : 0);
+      setIsLessonFinished(false);
+      setShowResumePrompt(false);
+      setPendingLesson(null);
+      setIsLessonTransitioning(false);
+    }, 800);
   };
 
   // Handle auto-open if requested from Hero
@@ -2217,6 +2428,14 @@ export function Lessons({
     }
     return base;
   }, [selectedLevel, isOnline, downloadedLessons, searchQuery]);
+
+  if (isLessonTransitioning) {
+    return (
+      <div className="max-w-4xl mx-auto px-6 py-20 flex items-center justify-center min-h-[600px]">
+        <LessonLoading message="Carregando ambiente de estudos..." />
+      </div>
+    );
+  }
 
   if (isQuizMode) {
     const question = currentLevelQuestions[quizIndex];
@@ -2561,10 +2780,42 @@ export function Lessons({
                 Você completou a lição: <span className="text-emerald-600 font-bold">{selectedLesson.title}</span>
               </p>
 
-                <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-                  {suggestedNextLesson ? (
-                    <button
-                      onClick={() => {
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12">
+                <button 
+                  onClick={() => handleShareLesson(selectedLesson)}
+                  className="w-full sm:w-auto px-10 py-5 bg-white border-2 border-emerald-500 text-emerald-600 rounded-2xl font-bold hover:bg-emerald-50 transition-all flex items-center justify-center gap-2 shadow-sm"
+                >
+                  <Share2 size={22} />
+                  <span>Compartilhar Sucesso</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    setSelectedLesson(null);
+                    setIsLessonFinished(false);
+                    setCurrentPartIndex(0);
+                    setMaxVisitedIndex(0);
+                  }}
+                  className="w-full sm:w-auto px-10 py-5 bg-slate-100 text-slate-600 rounded-2xl font-bold hover:bg-slate-200 transition-colors flex items-center justify-center gap-2"
+                >
+                  <Book size={20} />
+                  <span>Mapa de Lições</span>
+                </button>
+              </div>
+
+              {suggestedNextLesson ? (
+                <div className="space-y-6">
+                  <div className="flex items-center justify-center gap-4">
+                    <div className="h-px bg-slate-100 flex-grow" />
+                    <span className="text-xs font-black uppercase tracking-widest text-slate-300">Continue sua jornada</span>
+                    <div className="h-px bg-slate-100 flex-grow" />
+                  </div>
+                  
+                  <NextLessonCard 
+                    lesson={suggestedNextLesson} 
+                    onClick={() => {
+                      setIsLessonTransitioning(true);
+                      setTimeout(() => {
                         setSelectedLesson(suggestedNextLesson);
                         setIsLessonFinished(false);
                         setCurrentPartIndex(0);
@@ -2575,43 +2826,16 @@ export function Lessons({
                         if (suggestedNextLesson.difficulty !== selectedLevel) {
                           setSelectedLevel(suggestedNextLesson.difficulty as any);
                         }
-                      }}
-                      className="w-full sm:w-auto px-10 py-5 bg-emerald-600 text-white rounded-2xl font-black hover:bg-emerald-700 transition-all shadow-xl shadow-emerald-600/20 flex items-center justify-center gap-3 active:scale-95"
-                    >
-                      <span>Próxima Lição</span>
-                      <ChevronRight size={24} />
-                    </button>
-                  ) : (
-                    <p className="text-emerald-600 font-black mb-4">Parabéns! Você completou todas as lições deste nível!</p>
-                  )}
-                  
-                  <button 
-                    onClick={() => handleShareLesson(selectedLesson)}
-                    className="w-full sm:w-auto px-10 py-5 bg-white border-2 border-emerald-500 text-emerald-600 rounded-2xl font-bold hover:bg-emerald-50 transition-all flex items-center justify-center gap-2"
-                  >
-                    <Share2 size={22} />
-                    <span>Compartilhar</span>
-                  </button>
-
-                  <button
-                    onClick={() => {
-                    setSelectedLesson(null);
-                    setIsLessonFinished(false);
-                    setCurrentPartIndex(0);
-                    setMaxVisitedIndex(0);
-                  }}
-                  className="w-full sm:w-auto px-10 py-5 bg-slate-100 text-slate-600 rounded-2xl font-bold hover:bg-slate-200 transition-colors flex items-center justify-center gap-2"
-                >
-                  <Book size={20} />
-                  <span>Ver todas as lições</span>
-                </button>
-              </div>
-              
-              {suggestedNextLesson && (
-                <div className="mt-12 p-6 bg-slate-50 rounded-3xl border border-slate-100 max-w-sm mx-auto">
-                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3">Sugestão automática</p>
-                  <h4 className="font-bold text-slate-900 mb-1">{suggestedNextLesson.title}</h4>
-                  <p className="text-xs text-slate-500 line-clamp-1">{suggestedNextLesson.description}</p>
+                        setIsLessonTransitioning(false);
+                      }, 800);
+                    }}
+                  />
+                </div>
+              ) : (
+                <div className="p-8 bg-emerald-50 rounded-[32px] border border-emerald-100 max-w-md mx-auto">
+                   <Trophy size={32} className="text-emerald-600 mx-auto mb-4" />
+                   <h4 className="font-black text-slate-900 mb-2">Mestre Supremo!</h4>
+                   <p className="text-sm text-slate-600 font-medium">Você completou todas a lições disponíveis para este nível. Que tal se desafiar em um novo nível?</p>
                 </div>
               )}
             </div>
@@ -2737,17 +2961,20 @@ export function Lessons({
                     <InteractiveText text={part.content} />
                   </span>
                   {part.type === 'example' && (
-                    <Tooltip content="Adicionar aos Flashcards" position="left">
-                      <button 
-                        onClick={() => {
-                          const [front, back] = part.content.split(' significa ').map(s => s.replace(/"/g, '').trim());
-                          if (front && back) onAddToFlashcards(front, back, selectedLesson.title);
-                        }}
-                        className="p-2 text-emerald-600 hover:bg-emerald-50 rounded-xl transition-colors shrink-0"
-                      >
-                        <Plus size={20} />
-                      </button>
-                    </Tooltip>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <PronounceButton word={part.content.split(' significa ')[0].replace(/"/g, '')} />
+                      <Tooltip content="Adicionar aos Flashcards" position="left">
+                        <button 
+                          onClick={() => {
+                            const [front, back] = part.content.split(' significa ').map(s => s.replace(/"/g, '').trim());
+                            if (front && back) onAddToFlashcards(front, back, selectedLesson.title);
+                          }}
+                          className="p-2 text-emerald-600 hover:bg-emerald-50 rounded-xl transition-colors"
+                        >
+                          <Plus size={20} />
+                        </button>
+                      </Tooltip>
+                    </div>
                   )}
                 </div>
 
@@ -2768,16 +2995,14 @@ export function Lessons({
                   <motion.div 
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    className="relative aspect-video rounded-3xl overflow-hidden border border-slate-100 shadow-md"
+                    className="relative aspect-video rounded-3xl overflow-hidden border border-slate-100 shadow-md group"
                   >
-                    <img 
+                    <ImageWithLoader 
                       src={part.imageUrl} 
                       alt={part.content}
-                      className="w-full h-full object-cover"
-                      referrerPolicy="no-referrer"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-slate-900/40 to-transparent" />
-                    <div className="absolute bottom-6 left-6 text-white font-bold text-lg">
+                    <div className="absolute inset-0 bg-gradient-to-t from-slate-900/40 to-transparent pointer-events-none" />
+                    <div className="absolute bottom-6 left-6 text-white font-bold text-lg pointer-events-none">
                       {part.content}
                     </div>
                   </motion.div>
@@ -2786,8 +3011,11 @@ export function Lessons({
                 {part.type === 'combine' && (
                   <div id="lesson-interaction" className="space-y-10 py-4">
                     <div className="flex flex-wrap items-center justify-center gap-3">
-                      <div className="px-8 py-5 bg-slate-900 text-white rounded-[2rem] text-3xl font-black shadow-2xl ring-4 ring-slate-100">
+                      <div className="px-8 py-5 bg-slate-900 text-white rounded-[2rem] text-3xl font-black shadow-2xl ring-4 ring-slate-100 relative group">
                         {part.root}
+                        <div className="absolute -top-3 -right-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                           <PronounceButton word={part.root} />
+                        </div>
                       </div>
                       <Plus className="text-emerald-500 animate-pulse" size={28} />
                       <div className={`px-8 py-5 rounded-[2rem] text-3xl font-black border-4 border-dashed transition-all duration-500 ${

@@ -42,24 +42,32 @@ export function Flashcards({ cards, onAddCard, onUpdateCard, onDeleteCard, onAwa
   const now = Date.now();
   const dueCards = cards.filter(c => !c.nextReview || c.nextReview <= now);
 
-  // Load saved session on mount
-  React.useEffect(() => {
+  // Check for saved session
+  const checkSavedSession = () => {
     const saved = localStorage.getItem('flashcards_session');
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
         if (parsed && parsed.sessionCards && parsed.sessionCards.length > 0) {
           setHasSavedSession(true);
+          return true;
         }
       } catch (e) {
         localStorage.removeItem('flashcards_session');
       }
     }
-  }, []);
+    setHasSavedSession(false);
+    return false;
+  };
+
+  // Load saved session on mount and when practiceMode changes
+  React.useEffect(() => {
+    checkSavedSession();
+  }, [practiceMode]);
 
   // Save session state to localStorage
   React.useEffect(() => {
-    if (practiceMode && !showSummary) {
+    if (practiceMode && !showSummary && sessionCards.length > 0) {
       localStorage.setItem('flashcards_session', JSON.stringify({
         sessionCards,
         currentIndex,
@@ -69,10 +77,12 @@ export function Flashcards({ cards, onAddCard, onUpdateCard, onDeleteCard, onAwa
         initialSessionSize,
         isQuickReview,
         sideMode,
-        shuffleOrder
+        shuffleOrder,
+        isFlipped,
+        timestamp: Date.now()
       }));
     }
-  }, [practiceMode, showSummary, sessionCards, currentIndex, correctCount, incorrectCount, reviewCount, initialSessionSize, isQuickReview, sideMode, shuffleOrder]);
+  }, [practiceMode, showSummary, sessionCards, currentIndex, correctCount, incorrectCount, reviewCount, initialSessionSize, isQuickReview, sideMode, shuffleOrder, isFlipped]);
   
   const categories = ['Todos', ...Array.from(new Set(cards.map(c => c.category || 'Geral')))];
   
@@ -86,6 +96,10 @@ export function Flashcards({ cards, onAddCard, onUpdateCard, onDeleteCard, onAwa
   const startPractice = () => {
     if (filteredCards.length === 0) return;
     
+    // Clear any previous session immediately when starting a new one
+    localStorage.removeItem('flashcards_session');
+    setHasSavedSession(false);
+
     let prepared = filteredCards.map(c => {
       const showFrontFirst = sideMode === 'random' ? Math.random() > 0.5 : sideMode === 'front';
       return {
@@ -112,7 +126,6 @@ export function Flashcards({ cards, onAddCard, onUpdateCard, onDeleteCard, onAwa
     setPracticeMode(true);
     setShowConfig(false);
     setLastResult(null);
-    setHasSavedSession(false);
   };
 
   const resumePractice = () => {
@@ -130,6 +143,7 @@ export function Flashcards({ cards, onAddCard, onUpdateCard, onDeleteCard, onAwa
       setIsQuickReview(p.isQuickReview);
       setSideMode(p.sideMode || 'front');
       setShuffleOrder(p.shuffleOrder !== undefined ? p.shuffleOrder : true);
+      setIsFlipped(p.isFlipped || false);
       
       setPracticeMode(true);
       setShowSummary(false);
